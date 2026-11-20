@@ -39,7 +39,7 @@ export default function Landing() {
         </div>
         <div className="hero-card">
           <div className="row between">
-            <div><b style={{ fontSize: 15 }}>Rahul Patil</b><p style={{ color: "#a9abd0", fontSize: 13 }}>Python Developer • ATS 91/100</p></div>
+            <div><b style={{ fontSize: 15 }}>Ganesh Sawant</b><p style={{ color: "#a9abd0", fontSize: 13 }}>Python Developer • ATS 91/100</p></div>
             <span className="badge b-green">Excellent</span>
           </div>
           {[["Python Developer", "TechNova Solutions", 92], ["Full Stack (React + Django)", "CloudNine Labs", 84], ["Backend Engineer", "Quantum Leap IT", 71]].map(([t, c, s]) => (
