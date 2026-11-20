@@ -1,0 +1,29 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> select this repo
+services:
+  - type: web
+    name: jobmatch-ai
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health/
+    envVars:
+      - key: DATABASE_URL          # paste your Neon connection string
+        sync: false
+      - key: ADMIN_PASSWORD        # password for the "admin" login
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: USE_REDIS
+        value: "False"
+      - key: ASYNC_PROCESSING
+        value: "False"
+      - key: FREE_JOB_APIS
+        value: "True"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: ADZUNA_APP_ID         # optional - India city jobs
+        sync: false
+      - key: ADZUNA_APP_KEY
+        sync: false

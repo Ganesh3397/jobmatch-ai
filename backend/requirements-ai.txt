@@ -1,0 +1,3 @@
+# OPTIONAL: better semantic matching with BERT embeddings (downloads ~90MB model first time)
+# pip install -r requirements-ai.txt
+sentence-transformers>=3.0
