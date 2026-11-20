@@ -27,9 +27,11 @@ export default function Profile() {
     } catch (err) { toast.error(errMsg(err)); }
   };
 
+  const isDemo = ["student", "demo_seeker0", "demo_seeker1", "demo_seeker2"].includes(user.username);
   return (
     <>
       <div className="page-head"><div><h1>Profile</h1><p>Manage your account details</p></div></div>
+      {isDemo && <div className="info-strip" style={{ marginBottom: 18 }}>This is a shared demo account, so its profile and password cannot be changed. Register your own free account to save your details.</div>}
       <div className="grid g-side">
         <form className="card" onSubmit={save}>
           <h3>Personal details</h3>

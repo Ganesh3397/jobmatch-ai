@@ -17,18 +17,32 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """Public sign-up: ALWAYS creates a Job Seeker (recruiters are created by the admin only)."""
     password = serializers.CharField(write_only=True, validators=[validate_password])
-    role = serializers.ChoiceField(
-        choices=[User.Role.SEEKER, User.Role.RECRUITER], default=User.Role.SEEKER
-    )
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "first_name", "last_name", "role",
-                  "phone", "location", "company_name"]
+        fields = ["username", "email", "password", "first_name", "last_name", "phone", "location"]
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(**validated_data, role=User.Role.SEEKER)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class AdminCreateUserSerializer(serializers.ModelSerializer):
+    """Admin only: create a recruiter (or seeker) account."""
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    role = serializers.ChoiceField(choices=[User.Role.RECRUITER, User.Role.SEEKER], default=User.Role.RECRUITER)
+
+    class Meta:
+        model = User
+        fields = ["username", "email", "password", "first_name", "last_name", "role", "company_name", "location"]
 
     def validate(self, attrs):
-        if attrs.get("role") == User.Role.RECRUITER and not attrs.get("company_name"):
+        if attrs.get("role", User.Role.RECRUITER) == User.Role.RECRUITER and not attrs.get("company_name"):
             raise serializers.ValidationError({"company_name": "Company name is required for recruiters."})
         return attrs
 

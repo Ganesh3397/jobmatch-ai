@@ -196,3 +196,35 @@ class LiveFeedTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertIn(b"Asha Kulkarni", r.content)
         self.assertEqual(APIClient().get("/api/resumes/file/bad-token/").status_code, 404)
+
+
+class RoleAccessTests(TestCase):
+    def test_public_signup_is_always_seeker(self):
+        c = APIClient()
+        r = c.post("/api/auth/register/", {"username": "hacker", "email": "h@x.com", "password": "secret12",
+                                           "role": "recruiter", "company_name": "Fake"}, format="json")
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["user"]["role"], "seeker")
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        self.assertEqual(c.post("/api/jobs/", {"title": "x", "description": "y"}, format="json").status_code, 403)
+        self.assertEqual(c.post("/api/auth/users/create/", {}, format="json").status_code, 403)
+
+    def test_admin_creates_recruiter(self):
+        User = get_user_model()
+        User.objects.create_superuser("boss", "b@x.com", "secret12")
+        c = APIClient()
+        tok = c.post("/api/auth/login/", {"username": "boss", "password": "secret12"}, format="json").data["access"]
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + tok)
+        r = c.post("/api/auth/users/create/", {"username": "hr1", "email": "hr1@x.com", "password": "secret12",
+                                               "role": "recruiter", "company_name": "Acme"}, format="json")
+        self.assertEqual(r.status_code, 201)
+        self.assertEqual(r.data["role"], "recruiter")
+
+    def test_demo_account_password_locked(self):
+        User = get_user_model()
+        User.objects.create_user("student", "s@x.com", "student123")
+        c = APIClient()
+        tok = c.post("/api/auth/login/", {"username": "student", "password": "student123"}, format="json").data["access"]
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + tok)
+        r = c.post("/api/auth/change-password/", {"old_password": "student123", "new_password": "hacked123"}, format="json")
+        self.assertEqual(r.status_code, 403)

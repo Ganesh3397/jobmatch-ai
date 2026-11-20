@@ -61,9 +61,8 @@ export default function Login() {
           <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Logging in…" : "Login"}</button>
           <p className="muted" style={{ marginTop: 16, textAlign: "center" }}>New here? <Link to="/register">Create an account</Link></p>
           <div className="demo-logins">
-            <b>Demo logins:</b>
-            <button type="button" onClick={() => demo("student", "student123")}>Student</button>•
-            <button type="button" onClick={() => demo("recruiter", "recruiter123")}>Recruiter</button>
+            <b>Just looking?</b>
+            <button type="button" onClick={() => demo("student", "student123")}>Try the demo account</button>
           </div>
         </form>
       </div>

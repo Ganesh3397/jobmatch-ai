@@ -34,7 +34,7 @@ export default function Landing() {
             and tells you exactly which skills you need to land them.</p>
           <div className="row">
             <Link className="btn btn-primary" to="/register" style={{ padding: "13px 22px" }}>Analyze my resume — free</Link>
-            <Link className="btn btn-ghost" to="/register?role=recruiter" style={{ padding: "13px 22px" }}>I'm hiring</Link>
+            <Link className="btn btn-ghost" to="/login" style={{ padding: "13px 22px" }}>Login</Link>
           </div>
         </div>
         <div className="hero-card">

@@ -6,8 +6,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .permissions import IsAdminRole
-from .serializers import (ChangePasswordSerializer, LoginSerializer,
-                          RegisterSerializer, UserSerializer)
+from .serializers import (AdminCreateUserSerializer, ChangePasswordSerializer,
+                          LoginSerializer, RegisterSerializer, UserSerializer)
+
+# Shared demo accounts: anyone can log in, nobody can lock others out
+DEMO_USERNAMES = {"student", "demo_seeker0", "demo_seeker1", "demo_seeker2"}
 
 User = get_user_model()
 
@@ -39,9 +42,17 @@ class MeView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+    def update(self, request, *args, **kwargs):
+        if request.user.username in DEMO_USERNAMES:
+            return Response({"detail": "This is a shared demo account. Please register your own account to edit a profile."},
+                            status=403)
+        return super().update(request, *args, **kwargs)
+
 
 class ChangePasswordView(APIView):
     def post(self, request):
+        if request.user.username in DEMO_USERNAMES:
+            return Response({"detail": "The demo account password cannot be changed."}, status=403)
         s = ChangePasswordSerializer(data=request.data)
         s.is_valid(raise_exception=True)
         if not request.user.check_password(s.validated_data["old_password"]):
@@ -58,6 +69,18 @@ class UserAdminListView(generics.ListAPIView):
     queryset = User.objects.all().order_by("-date_joined")
     filterset_fields = ["role", "is_active"]
     search_fields = ["username", "email", "first_name", "last_name"]
+
+
+class UserAdminCreateView(generics.CreateAPIView):
+    """Admin: create recruiter accounts (public sign-up only creates job seekers)."""
+    serializer_class = AdminCreateUserSerializer
+    permission_classes = [IsAdminRole]
+
+    def create(self, request, *args, **kwargs):
+        s = self.get_serializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        user = s.save()
+        return Response(UserSerializer(user).data, status=status.HTTP_201_CREATED)
 
 
 class UserAdminToggleView(APIView):
