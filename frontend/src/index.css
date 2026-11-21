@@ -500,3 +500,5 @@ h1, h2, .page-head h1, .banner h2, .auth-box h1 { font-family: var(--display); l
   .sheet-match em { white-space: nowrap; }
   .sheet-match span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 150px; }
 }
+.land-cta .btn-ghost, .land-cta-login { background: transparent; color: #fff; border-color: rgba(255,255,255,.28); }
+.land-cta .btn-ghost:hover { background: rgba(255,255,255,.08); }

@@ -67,8 +67,8 @@ export default function Landing() {
         <Link to="/" className="brand"><span className="logo-mark"><Sparkles size={17} /></span>JobMatch AI</Link>
         <nav className="row">
           <ThemeToggle inline className="land-theme" />
-          <Link className="btn btn-ghost" to="/login">Log in</Link>
-          <Link className="btn btn-primary" to="/register">Create free account</Link>
+          <Link className="btn btn-ghost" to="/login">Login</Link>
+          <Link className="btn btn-primary" to="/register">Register</Link>
         </nav>
       </header>
 
@@ -78,10 +78,9 @@ export default function Landing() {
           <p>Upload your CV and get an ATS score, the skills recruiters are searching for, and live job openings that fit you.
             It takes less than a minute.</p>
           <div className="row hero-cta">
-            <Link className="btn btn-primary btn-lg" to="/register"><FileSearch />Check my resume free</Link>
-            <Link className="btn btn-ghost btn-lg" to="/login">Try the demo account</Link>
+                       <Link className="btn btn-primary btn-lg" to="/register"><FileSearch />Register</Link>
+            <Link className="btn btn-ghost btn-lg" to="/login">Login</Link>
           </div>
-          <p className="hero-note">Free for students. No credit card.</p>
         </div>
         <ResumeSheet />
       </section>
@@ -114,7 +113,8 @@ export default function Landing() {
 
       <section className="land-cta">
         <h2>Your next interview starts with a better resume.</h2>
-        <Link className="btn btn-hl btn-lg" to="/register"><BriefcaseBusiness />Get my ATS score</Link>
+        <div className="row"><Link className="btn btn-hl btn-lg" to="/register"><BriefcaseBusiness />Register</Link>
+          <Link className="btn btn-ghost btn-lg land-cta-login" to="/login">Login</Link></div>
       </section>
 
       <footer className="land-foot">

@@ -65,10 +65,7 @@ export default function Login() {
             <input className="input" type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required /></div>
           <button className="btn btn-primary btn-block btn-lg" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
           <p className="muted" style={{ marginTop: 16, textAlign: "center" }}>New here? <Link to="/register">Create an account</Link></p>
-          <div className="demo-logins">
-            <b>Just looking?</b>
-            <button type="button" onClick={() => demo("student", "student123")}>Try the demo account</button>
-          </div>
+      
         </form>
       </div>
     </div>
