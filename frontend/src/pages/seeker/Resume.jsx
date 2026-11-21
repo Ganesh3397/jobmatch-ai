@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import api, { errMsg } from "../../api";
+import RoleATS from "../../components/RoleATS";
 import { Bar, Chips, Empty, Loader, ScoreRing, StatusBadge } from "../../components/ui";
 
 const PRI = { high: "#f04438", medium: "#f5a524", low: "#12b76a" };
@@ -87,7 +88,7 @@ export default function ResumePage() {
             <>
               <div className="card mt">
                 <div className="row" style={{ gap: 28, alignItems: "center" }}>
-                  <ScoreRing value={detail.ats_score} size={150} label="ATS Score" />
+                  <ScoreRing value={detail.ats_score} size={150} label="General ATS" />
                   <div style={{ flex: 1, minWidth: 260 }}>
                     <div className="row between" style={{ marginBottom: 10 }}>
                       <h3 style={{ margin: 0 }}>Score breakdown</h3>
@@ -97,6 +98,8 @@ export default function ResumePage() {
                   </div>
                 </div>
               </div>
+
+              <RoleATS resumeId={detail.id} />
 
               <div className="grid g-2 mt">
                 <div className="card">
@@ -141,7 +144,7 @@ export default function ResumePage() {
                 </div>
                 <div className="grid g-3 mt">
                   {detail.predicted_roles.map((r) => (
-                    <div key={r.role} className="card" style={{ background: "#fafbff", boxShadow: "none" }}>
+                    <div key={r.role} className="card" style={{ background: "var(--surface-2)", boxShadow: "none" }}>
                       <b>{r.role}</b>
                       <div className="bar" style={{ margin: "10px 0 6px" }}><div style={{ width: `${r.fit}%` }} /></div>
                       <p className="small muted">{r.fit}% fit{r.missing_core_skills.length ? ` • Learn ${r.missing_core_skills.join(", ")}` : ""}</p>
@@ -159,7 +162,7 @@ export default function ResumePage() {
           {list.map((r) => (
             <div key={r.id} onClick={() => open(r.id)} style={{
               padding: 12, borderRadius: 12, marginBottom: 8, cursor: "pointer",
-              border: `1.5px solid ${sel === r.id ? "#5b5bf7" : "#e6e8f2"}`, background: sel === r.id ? "#f6f6ff" : "#fff",
+              border: `1.5px solid ${sel === r.id ? "var(--brand)" : "var(--line)"}`, background: sel === r.id ? "var(--brand-soft)" : "var(--surface)",
             }}>
               <div className="row between">
                 <b style={{ fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>{r.original_name}</b>
@@ -167,7 +170,7 @@ export default function ResumePage() {
               </div>
               <div className="row between small muted" style={{ marginTop: 6 }}>
                 <span>{new Date(r.created_at).toLocaleDateString()}</span>
-                {r.status === "done" ? <b style={{ color: "#1b1f33" }}>ATS {r.ats_score}</b> : <StatusBadge s={r.status} />}
+                {r.status === "done" ? <b style={{ color: "var(--text)" }}>ATS {r.ats_score}</b> : <StatusBadge s={r.status} />}
               </div>
               {sel === r.id && (
                 <div className="row" style={{ marginTop: 10, gap: 6 }} onClick={(e) => e.stopPropagation()}>

@@ -46,7 +46,8 @@ export default function SeekerDashboard() {
               <p className="muted small">Experience detected: {p.experience_years} yrs</p>
             </div>
             <div className="card">
-              <h3>🎯 Best-fit job roles</h3>
+              <div className="row between" style={{ marginBottom: 10 }}><h3 style={{ margin: 0 }}>🎯 Best-fit job roles</h3>
+                <Link to="/roadmap" className="btn btn-soft btn-sm">Roadmap →</Link></div>
               {p.predicted_roles.map((r) => (
                 <div key={r.role} className="bar-row">
                   <div className="row between"><span>{r.role}</span><b>{r.fit}%</b></div>

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import JDMatch, Resume
+from .models import JDMatch, Resume, SkillProgress
 
 
 @admin.register(Resume)
@@ -14,3 +14,6 @@ class ResumeAdmin(admin.ModelAdmin):
 @admin.register(JDMatch)
 class JDMatchAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "job_title", "score", "created_at")
+
+
+admin.site.register(SkillProgress)

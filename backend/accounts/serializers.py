@@ -12,8 +12,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "username", "email", "first_name", "last_name", "role", "phone",
             "location", "headline", "company_name", "job_alerts_enabled", "date_joined", "is_active",
+            "last_login",
         ]
-        read_only_fields = ["id", "role", "date_joined", "is_active"]
+        read_only_fields = ["id", "role", "date_joined", "is_active", "last_login"]
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -33,9 +34,10 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class AdminCreateUserSerializer(serializers.ModelSerializer):
-    """Admin only: create a recruiter (or seeker) account."""
+    """Admin only: create a recruiter or seeker account."""
     password = serializers.CharField(write_only=True, validators=[validate_password])
-    role = serializers.ChoiceField(choices=[User.Role.RECRUITER, User.Role.SEEKER], default=User.Role.RECRUITER)
+    role = serializers.ChoiceField(choices=[User.Role.RECRUITER, User.Role.SEEKER],
+                                   default=User.Role.RECRUITER)
 
     class Meta:
         model = User

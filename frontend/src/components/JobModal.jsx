@@ -1,4 +1,5 @@
-import { BookOpen, ExternalLink, Send, X } from "lucide-react";
+import { BookOpen, ExternalLink, FileSignature, Mic, Send, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import api, { errMsg, fmtSalary } from "../api";
@@ -43,7 +44,7 @@ export default function JobModal({ job: initial, match, onClose, onApplied }) {
       </div>
       <div className="modal-body">
         {match && (
-          <div className="card" style={{ background: "#fafbff", marginBottom: 18 }}>
+          <div className="card" style={{ background: "var(--surface-2)", marginBottom: 18 }}>
             <div className="row" style={{ gap: 24, alignItems: "center" }}>
               <ScoreRing value={match.score} size={110} label={match.label?.split(" ")[0] || "Match"} />
               <div style={{ flex: 1, minWidth: 220 }}>
@@ -68,6 +69,11 @@ export default function JobModal({ job: initial, match, onClose, onApplied }) {
             )}
           </div>
         )}
+
+        <div className="row" style={{ marginBottom: 16 }}>
+          <Link className="btn btn-soft btn-sm" to={`/interview?job=${job.id}`}><Mic />Practice interview for this job</Link>
+          <Link className="btn btn-soft btn-sm" to={`/ai-writer?job=${job.id}`}><FileSignature />Write cover letter</Link>
+        </div>
 
         <h4 style={{ marginBottom: 8 }}>Job description</h4>
         <div className="desc">{job.description || job.short_description}</div>

@@ -1,19 +1,22 @@
+import ThemeToggle from "../components/ThemeToggle";
 import { Sparkles } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { errMsg } from "../api";
 import { homeFor, useAuth } from "../auth";
+import { ResumeSheet } from "./Landing";
 
 export function AuthArt() {
   return (
     <div className="auth-art">
-      <div className="logo" style={{ padding: 0 }}><div className="logo-mark"><Sparkles size={18} /></div>JobMatch AI</div>
+      <Link to="/" className="brand"><span className="logo-mark"><Sparkles size={17} /></span>JobMatch AI</Link>
       <div>
-        <h2>Your resume, analysed by AI. Your next job, found in real time.</h2>
-        <p>ATS scoring, skill-gap analysis and live job recommendations from across the web — all in one place.</p>
+        <h2>Find out what recruiters see in your resume.</h2>
+        <p>ATS score, missing skills and live jobs that fit you, all in one place.</p>
+        <ResumeSheet compact />
       </div>
-      <p style={{ fontSize: 13 }}>MCA Project • Python • Django • React • PostgreSQL • Redis • ML</p>
+      <p className="small" style={{ color: "#9a9dc4" }}>Built by Ganesh Sawant as an MCA project</p>
     </div>
   );
 }
@@ -48,17 +51,19 @@ export default function Login() {
 
   return (
     <div className="auth">
+      <ThemeToggle />
       <AuthArt />
       <div className="auth-form">
         <form className="auth-box" onSubmit={submit}>
           <MobileLogo />
-          <h1>Welcome back 👋</h1>
-          <p className="muted" style={{ margin: "6px 0 24px" }}>Login to continue to your dashboard</p>
+          <h1>Welcome back</h1>
+          <p className="muted" style={{ margin: "6px 0 24px" }}>Log in to see your resume score and job matches.</p>
           <div className="field"><label>Username or email</label>
             <input className="input" value={f.username} onChange={(e) => setF({ ...f, username: e.target.value })} required autoFocus /></div>
-          <div className="field"><label>Password</label>
+          <div className="field"><div className="row between"><label>Password</label>
+            <Link to="/forgot-password" className="small">Forgot password?</Link></div>
             <input className="input" type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} required /></div>
-          <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Logging in…" : "Login"}</button>
+          <button className="btn btn-primary btn-block btn-lg" disabled={busy}>{busy ? "Logging in…" : "Log in"}</button>
           <p className="muted" style={{ marginTop: 16, textAlign: "center" }}>New here? <Link to="/register">Create an account</Link></p>
           <div className="demo-logins">
             <b>Just looking?</b>

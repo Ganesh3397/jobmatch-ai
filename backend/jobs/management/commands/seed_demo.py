@@ -5,6 +5,7 @@ Creates demo users, demo jobs, recruiter job posts, a sample resume and
 applications so the project can be demonstrated even without API keys.
 All company names are fictional.
 """
+import os
 import random
 from pathlib import Path
 
@@ -140,7 +141,6 @@ class Command(BaseCommand):
             self.stdout.write("Database already has data - skipping demo seed.")
             return
         random.seed(7)
-        import os
         admin_pw = os.getenv("ADMIN_PASSWORD") or ("admin123" if settings.DEBUG else None)
         if admin_pw:
             admin, _ = User.objects.get_or_create(username="admin", defaults={
@@ -164,6 +164,7 @@ class Command(BaseCommand):
         seeker, _ = User.objects.get_or_create(username="student", defaults={
             "email": "rahul.patil.dev@gmail.com", "role": "seeker", "first_name": "Rahul",
             "last_name": "Patil", "location": "Pune", "headline": "MCA Student | Python Full Stack"})
+
         seeker.set_password("student123")
         seeker.save()
 

@@ -20,6 +20,20 @@ ROLES = {
     "Mobile App Developer": (["Flutter", "Dart"], ["React Native", "Firebase", "Android", "iOS", "REST API"]),
     "QA / Test Engineer": (["Manual Testing"], ["Selenium", "Unit Testing", "Postman", "Jira", "Java", "Python", "Agile"]),
     "Cyber Security Analyst": (["Cyber Security", "Computer Networks"], ["Linux", "Python", "Bash"]),
+    "Technical Support Engineer": (["Technical Support", "Troubleshooting", "Customer Service"],
+                                   ["Ticketing Tools", "Windows", "Computer Networks", "ITIL", "SLA", "Remote Support",
+                                    "Linux", "SQL", "Communication"]),
+    "IT Support / Helpdesk": (["Troubleshooting", "Windows", "Hardware"],
+                              ["Computer Networks", "Active Directory", "Ticketing Tools", "Remote Support", "MS Office",
+                               "ITIL", "Customer Service"]),
+    "Customer Support Executive": (["Customer Service", "Communication"],
+                                   ["CRM", "Ticketing Tools", "Email & Chat Support", "MS Office", "Excel",
+                                    "Problem Solving", "Time Management"]),
+    "Business Analyst": (["Business Analysis", "SQL", "Excel"],
+                         ["Power BI", "Tableau", "Agile", "Jira", "Communication", "Data Analysis"]),
+    "UI/UX Designer": (["UI/UX Design", "Figma"], ["HTML", "CSS", "Communication"]),
+    "Database Administrator": (["SQL", "PostgreSQL"], ["MySQL", "Oracle", "Linux", "Redis", "MongoDB", "Bash"]),
+    "Network Engineer": (["Computer Networks", "Linux"], ["Cyber Security", "Windows", "Bash", "AWS"]),
 }
 
 

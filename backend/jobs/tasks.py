@@ -4,7 +4,6 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.mail import send_mail
 
 log = logging.getLogger(__name__)
 
@@ -65,8 +64,8 @@ def send_job_alerts(min_score=60, max_jobs=5):
             if j.apply_url:
                 lines.append(f"  Apply: {j.apply_url}")
         lines += ["", "— JobMatch AI"]
-        send_mail(f"{len(fresh)} new jobs match your resume", "\n".join(lines),
-                  settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=True)
+        from accounts.emails import send_email
+        send_email(user.email, f"{len(fresh)} new jobs match your resume", "\n".join(lines))
         JobAlertLog.objects.bulk_create(
             [JobAlertLog(user=user, job=r["job"], score=r["match"]["score"]) for r in fresh],
             ignore_conflicts=True)

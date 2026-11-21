@@ -1,5 +1,6 @@
 """Run:  python manage.py test"""
 from unittest import mock
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -228,3 +229,143 @@ class RoleAccessTests(TestCase):
         c.credentials(HTTP_AUTHORIZATION="Bearer " + tok)
         r = c.post("/api/auth/change-password/", {"old_password": "student123", "new_password": "hacked123"}, format="json")
         self.assertEqual(r.status_code, 403)
+
+
+class RoadmapTests(TestCase):
+    def setUp(self):
+        self.c = APIClient()
+        r = self.c.post("/api/auth/register/", {"username": "learner", "email": "l@x.com", "password": "secret12"}, format="json")
+        self.c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        f = SimpleUploadedFile("cv.txt", RESUME.encode(), content_type="text/plain")
+        self.c.post("/api/resumes/", {"file": f}, format="multipart")
+
+    def test_roadmap_lists_missing_skills_and_tracks_progress(self):
+        r = self.c.get("/api/resumes/roadmap/?role=DevOps Engineer")
+        self.assertEqual(r.status_code, 200)
+        skills = [s["skill"] for s in r.data["steps"]]
+        self.assertIn("Kubernetes", skills)
+        self.assertNotIn("Docker", skills)          # already in resume
+        self.assertIn("Docker", r.data["already_have"])
+        self.assertTrue(r.data["steps"][0]["links"][0]["url"].startswith("https://"))
+        before = r.data["readiness"]
+        self.c.post("/api/resumes/roadmap/", {"skill": "Kubernetes", "done": True}, format="json")
+        r2 = self.c.get("/api/resumes/roadmap/?role=DevOps Engineer")
+        self.assertGreater(r2.data["readiness"], before)
+        self.assertTrue(next(s for s in r2.data["steps"] if s["skill"] == "Kubernetes")["done"])
+        self.assertEqual(self.c.get("/api/resumes/roadmap/?role=Astronaut").status_code, 400)
+
+
+class PasswordResetTests(TestCase):
+    def setUp(self):
+        self.User = get_user_model()
+        self.User.objects.create_user("riya", "riya@x.com", "oldpass12", first_name="Riya")
+        self.c = APIClient()
+
+    def _code_from_mail(self):
+        import re
+        from django.core import mail
+        return re.search(r"\b(\d{6})\b", mail.outbox[-1].body).group(1)
+
+    @override_settings(EMAIL_HOST_USER="me@gmail.com", EMAIL_HOST_PASSWORD="abcdabcdabcdabcd")
+    def test_otp_flow_with_email(self):
+        from django.core import mail
+        with patch("accounts.emails._smtp", side_effect=lambda to, s, t, h: (mail.send_mail(s, t, "a@b.c", [to]), (True, ""))[1]):
+            r = self.c.post("/api/auth/password-reset/", {"email": "RIYA@x.com"}, format="json")
+            self.assertEqual(r.status_code, 200, r.data)
+            self.assertNotIn("dev_code", r.data)
+            code = self._code_from_mail()
+            # resend too soon
+            self.assertEqual(self.c.post("/api/auth/password-reset/", {"email": "riya@x.com"}, format="json").status_code, 429)
+            wrong = "000000" if code != "000000" else "111111"
+            r = self.c.post("/api/auth/password-reset/verify/", {"email": "riya@x.com", "code": wrong}, format="json")
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("4 attempts left", r.data["code"][0])
+            r = self.c.post("/api/auth/password-reset/verify/", {"email": "riya@x.com", "code": code}, format="json")
+            self.assertEqual(r.status_code, 200)
+            r = self.c.post("/api/auth/password-reset/confirm/", {"email": "riya@x.com", "code": code,
+                                                                  "new_password": "newpass12"}, format="json")
+            self.assertEqual(r.status_code, 200, r.data)
+        self.assertTrue(self.User.objects.get(username="riya").check_password("newpass12"))
+        # code works only once
+        r = self.c.post("/api/auth/password-reset/confirm/", {"email": "riya@x.com", "code": code,
+                                                              "new_password": "another12"}, format="json")
+        self.assertEqual(r.status_code, 400)
+
+    def test_unknown_email_and_lockout(self):
+        self.assertEqual(self.c.post("/api/auth/password-reset/", {"email": "nobody@x.com"}, format="json").status_code, 404)
+
+    @override_settings(DEBUG=True)
+    def test_dev_mode_shows_code_when_email_not_set_up(self):
+        r = self.c.post("/api/auth/password-reset/", {"email": "riya@x.com"}, format="json")
+        self.assertEqual(r.status_code, 200)
+        code = r.data["dev_code"]
+        for _ in range(5):
+            self.c.post("/api/auth/password-reset/verify/", {"email": "riya@x.com", "code": "x"}, format="json")
+        r = self.c.post("/api/auth/password-reset/confirm/", {"email": "riya@x.com", "code": code,
+                                                              "new_password": "newpass12"}, format="json")
+        self.assertEqual(r.status_code, 400)  # locked after 5 wrong attempts
+
+    def test_production_without_email_gives_clear_error(self):
+        r = self.c.post("/api/auth/password-reset/", {"email": "riya@x.com"}, format="json")
+        self.assertEqual(r.status_code, 503)
+        self.assertEqual(r.data["code"], "email_not_configured")
+
+    @override_settings(BREVO_API_KEY="bad", EMAIL_FROM_ADDRESS="me@gmail.com")
+    def test_brevo_error_is_reported(self):
+        class R:
+            status_code = 400
+            text = "sender not valid"
+            def json(self):
+                return {"message": "Sender me@gmail.com is not valid"}
+        admin = self.User.objects.create_user("boss", "boss@x.com", "secret12", role="admin")
+        self.c.force_authenticate(admin)
+        with patch("accounts.emails.requests.post", return_value=R()):
+            r = self.c.post("/api/auth/email/test/", {"to": "boss@x.com"}, format="json")
+            self.assertEqual(r.status_code, 502)
+            self.assertIn("Verify me@gmail.com", r.data["detail"])
+            self.assertEqual(self.c.get("/api/auth/email/status/").data["provider"], "brevo")
+            self.c.force_authenticate(None)
+            r = self.c.post("/api/auth/password-reset/", {"email": "riya@x.com"}, format="json")
+            self.assertEqual(r.status_code, 502)
+
+
+SUPPORT_RESUME = """Priya Shinde
+priya.s@gmail.com | +91 99887 66554
+SUMMARY
+Technical Support Engineer with 1 year of experience resolving customer issues.
+SKILLS
+Troubleshooting, Windows, Active Directory, ServiceNow, ITIL, Remote Desktop, Customer Service, Computer Networks
+EXPERIENCE
+Technical Support Engineer - HelpCo   Jan 2024 - Dec 2024
+- Resolved 40+ customer tickets daily within SLA using ServiceNow.
+- Troubleshooted Windows, printer and network issues and escalated L2 cases.
+EDUCATION
+BCA, Pune University 2020 - 2023
+"""
+
+
+class RoleATSTests(TestCase):
+    def _client(self, text, username):
+        c = APIClient()
+        r = c.post("/api/auth/register/", {"username": username, "email": f"{username}@x.com", "password": "secret12"}, format="json")
+        c.credentials(HTTP_AUTHORIZATION="Bearer " + r.data["access"])
+        rid = c.post("/api/resumes/", {"file": SimpleUploadedFile("cv.txt", text.encode())}, format="multipart").data["id"]
+        return c, rid
+
+    def test_same_resume_scores_differently_per_role(self):
+        c, rid = self._client(RESUME, "dev1")
+        dev = c.get(f"/api/resumes/{rid}/role-ats/?role=Python Developer").data
+        sup = c.get(f"/api/resumes/{rid}/role-ats/?role=Technical Support Engineer").data
+        self.assertGreater(dev["score"], sup["score"])
+        self.assertIn("Troubleshooting", sup["missing_core"])
+        self.assertTrue(sup["tips"])
+        self.assertIn("Support", dev["groups"])
+
+    def test_support_resume_ranks_support_roles_first(self):
+        c, rid = self._client(SUPPORT_RESUME, "sup1")
+        r = c.get(f"/api/resumes/{rid}/role-ats/").data
+        self.assertIn(r["ranking"][0]["role"], ("Technical Support Engineer", "IT Support / Helpdesk"))
+        sup = c.get(f"/api/resumes/{rid}/role-ats/?role=Technical Support Engineer").data
+        self.assertGreaterEqual(sup["score"], 65)
+        self.assertTrue(sup["title_match"])
+        self.assertEqual(c.get(f"/api/resumes/{rid}/role-ats/?role=Astronaut").status_code, 400)

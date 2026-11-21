@@ -74,7 +74,7 @@ postgresql://neondb_owner:xxxxxxxx@ep-xxxx.ap-southeast-1.aws.neon.tech/neondb?s
 
 - Link ughad → **Create an account** → navin account banav → resume upload kar ✅
 - Admin: username `admin` ani password = tu takleli `ADMIN_PASSWORD`
-- Django admin panel: `https://tujhi-link.onrender.com/admin/`
+- Django admin panel: `https://tujhi-link.onrender.com/django-admin/`
 - Demo logins pan chaltat: `student / student123`, `recruiter / recruiter123`
 
 ## Step 5: Share kar 📱
@@ -100,6 +100,17 @@ Database madhla data (users, resumes) **tasach rahto**. Demo data parat bharla j
   Render → tujhi service → **Environment** → `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` taak → **Save** (auto redeploy)
 
 ---
+
+## 🤖 (Optional) Gemini AI ani 📧 Email
+Render → jobmatch-ai → **Environment** → **Add Environment Variable**:
+| Key | Value |
+|---|---|
+| `GEMINI_API_KEY` | https://aistudio.google.com/apikey varun free key (AI interview / writer aankhi hushar hotat) |
+| `BREVO_API_KEY` | brevo.com → SMTP & API → API Keys (forgot password cha code email ne jaycha sathi) |
+| `EMAIL_FROM_ADDRESS` | Brevo → Senders madhe verify kelela tujha Gmail |
+| `EMAIL_FROM_NAME` | `JobMatch AI` |
+Save kela ki Render automatic restart karto. Mag admin login → **Users** → **Send test** ne email check kar.
+⚠️ Render free plan var Gmail SMTP chalat nahi (port block), mhanun live sathi Brevo ch vapar. Steps README → *Email setup* madhe aahet.
 
 ## 🛠️ Problem aala tar
 | Problem | Upay |

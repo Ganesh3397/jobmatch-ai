@@ -86,3 +86,17 @@ class JDMatch(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+
+class SkillProgress(models.Model):
+    """Skills a student has marked as 'learned' in the Skill Roadmap."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="skill_progress")
+    skill = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "skill")
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} learned {self.skill}"

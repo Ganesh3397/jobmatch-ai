@@ -8,7 +8,7 @@ export function ScoreRing({ value = 0, size = 120, stroke = 10, label = "Score" 
   return (
     <div className="ring" style={{ width: size, height: size }}>
       <svg width={size} height={size}>
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="#eef0f6" strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--track)" strokeWidth={stroke} fill="none" />
         <circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
           strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c - (v / 100) * c}
           style={{ transition: "stroke-dashoffset .8s ease" }} />
@@ -85,5 +85,6 @@ export function Modal({ onClose, children }) {
 export const STATUS_BADGE = {
   saved: "b-gray", applied: "b-brand", interview: "b-amber", offer: "b-green", rejected: "b-red",
   shortlisted: "b-green", hired: "b-green", pending: "b-gray", processing: "b-amber", done: "b-green", failed: "b-red",
+  open: "b-green", closed: "b-gray",
 };
 export const StatusBadge = ({ s }) => <span className={`badge ${STATUS_BADGE[s] || "b-gray"}`} style={{ textTransform: "capitalize" }}>{s}</span>;

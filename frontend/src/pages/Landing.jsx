@@ -1,69 +1,126 @@
-import { BellRing, Brain, FileSearch, Radar, Sparkles, Target, Users, Zap } from "lucide-react";
+import {
+  BriefcaseBusiness, FileSearch, KanbanSquare, Map, Mic, Radar, Smartphone, Sparkles, Target, Wand2, Gauge, Layers,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import { CompanyLogo } from "../components/ui";
+import ThemeToggle from "../components/ThemeToggle";
 
-const FEATURES = [
-  [FileSearch, "AI Resume Parsing", "Upload a PDF/DOCX. NLP extracts your name, contact, skills, education and experience automatically.", "#5b5bf7", "#eef0ff"],
-  [Target, "ATS Score & Tips", "Get a 0-100 ATS score with a detailed breakdown and personalised tips to improve your resume.", "#ff7a59", "#fff1ec"],
-  [Radar, "Real-Time Jobs", "Live jobs pulled from Adzuna & JSearch (LinkedIn, Indeed, Glassdoor) for your profile, refreshed automatically.", "#12b76a", "#e8f8f0"],
-  [Brain, "Smart Match %", "Hybrid AI matcher: skill overlap + semantic similarity (TF-IDF / BERT) + experience fit.", "#8b5cf6", "#f3edff"],
-  [Zap, "Skill Gap Analysis", "See exactly which skills you are missing for each job, with links to learn them.", "#f5a524", "#fff6e5"],
-  [Users, "Recruiter Panel", "Recruiters post jobs and see applicants automatically ranked by AI match score.", "#0ea5e9", "#e6f6fe"],
-  [BellRing, "Job Alerts", "Daily email alerts with new jobs that match your resume (Celery + Redis background jobs).", "#ec4899", "#fdeaf4"],
-  [Sparkles, "Analytics", "Dashboards for seekers, recruiters and admins — skill demand, ATS trends and more.", "#14b8a6", "#e6f7f5"],
+const STEPS = [
+  ["Upload your resume", "PDF or Word. We read your contact details, skills, education and experience."],
+  ["Get your ATS score", "A score out of 100 with clear tips, plus a separate score for the role you want."],
+  ["See jobs that fit you", "Live openings from five job boards, ranked by how well you match each one."],
+  ["Practise and apply", "Rehearse the interview with AI, write a cover letter, then apply on the company's page."],
 ];
+
+const GROUPS = [
+  ["Improve your resume", [
+    [Gauge, "ATS score and tips", "Know exactly what is costing you points and how to fix it."],
+    [Layers, "Score for each role", "The same CV scores differently for Full Stack, Support or Data roles. See all of them."],
+    [Wand2, "AI resume writer", "Turn weak bullet points into strong ones and get a cover letter for any job."],
+  ]],
+  ["Find the right job", [
+    [Radar, "Live jobs for you", "Real openings, with the skills you have and the ones you are missing."],
+    [Target, "Job description matcher", "Paste a job post from LinkedIn or Naukri and see how well you fit."],
+    [KanbanSquare, "Job tracker", "Keep track of every job from saved to offer."],
+  ]],
+  ["Get interview-ready", [
+    [Mic, "AI mock interview", "Answer HR and technical questions and get a score and feedback on each answer."],
+    [Map, "Skill roadmap", "A week-by-week plan with free courses for the skills you are missing."],
+    [Smartphone, "Works as a phone app", "Install it from Chrome and use it like any other app."],
+  ]],
+];
+
+export function ResumeSheet({ compact = false }) {
+  return (
+    <div className={`sheet ${compact ? "sheet-compact" : ""}`} aria-hidden="true">
+      <div className="sheet-paper">
+        <div className="sheet-head">
+          <div>
+            <b>Ganesh Sawant</b>
+            <span>MCA, Python Developer, Pune</span>
+          </div>
+          <div className="sheet-stamp"><b>91</b><span>ATS</span></div>
+        </div>
+        <div className="sheet-lines"><i style={{ width: "92%" }} /><i style={{ width: "78%" }} /><i style={{ width: "85%" }} /></div>
+        <div className="sheet-label">Skills found</div>
+        <div className="sheet-skills">
+          {["Python", "Django", "React", "PostgreSQL", "REST APIs"].map((s) => <mark key={s}>{s}</mark>)}
+          <span className="missing">Docker</span>
+        </div>
+        {!compact && <>
+          <div className="sheet-label">Experience</div>
+          <div className="sheet-lines"><i style={{ width: "88%" }} /><i style={{ width: "70%" }} /><i style={{ width: "80%" }} /><i style={{ width: "55%" }} /></div>
+        </>}
+      </div>
+      <div className="sheet-match">
+        <div className="sheet-match-logo">T</div>
+        <div><b>Python Developer</b><span>TechNova Solutions, Pune</span></div>
+        <em>92% match</em>
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   return (
     <div className="landing">
-      <div className="land-nav">
-        <div className="logo" style={{ padding: 0 }}>
-          <div className="logo-mark"><Sparkles size={18} /></div>JobMatch AI
-        </div>
-        <div className="row">
-          <Link className="btn btn-ghost" to="/login">Login</Link>
-          <Link className="btn btn-primary" to="/register">Get Started</Link>
-        </div>
-      </div>
+      <header className="land-nav">
+        <Link to="/" className="brand"><span className="logo-mark"><Sparkles size={17} /></span>JobMatch AI</Link>
+        <nav className="row">
+          <ThemeToggle inline className="land-theme" />
+          <Link className="btn btn-ghost" to="/login">Log in</Link>
+          <Link className="btn btn-primary" to="/register">Create free account</Link>
+        </nav>
+      </header>
 
       <section className="hero">
-        <div>
-          <div className="pill"><Sparkles size={14} /> AI-Powered • Real-Time • Free</div>
-          <h1>Upload your resume.<br /><em>Get matched to live jobs</em><br />in seconds.</h1>
-          <p>JobMatch AI reads your resume like a recruiter, scores it like an ATS, finds jobs that are open right now,
-            and tells you exactly which skills you need to land them.</p>
-          <div className="row">
-            <Link className="btn btn-primary" to="/register" style={{ padding: "13px 22px" }}>Analyze my resume — free</Link>
-            <Link className="btn btn-ghost" to="/login" style={{ padding: "13px 22px" }}>Login</Link>
+        <div className="hero-copy">
+          <h1>See your resume the way a recruiter's software does.</h1>
+          <p>Upload your CV and get an ATS score, the skills recruiters are searching for, and live job openings that fit you.
+            It takes less than a minute.</p>
+          <div className="row hero-cta">
+            <Link className="btn btn-primary btn-lg" to="/register"><FileSearch />Check my resume free</Link>
+            <Link className="btn btn-ghost btn-lg" to="/login">Try the demo account</Link>
           </div>
+          <p className="hero-note">Free for students. No credit card.</p>
         </div>
-        <div className="hero-card">
-          <div className="row between">
-            <div><b style={{ fontSize: 15 }}>Ganesh Sawant</b><p style={{ color: "#a9abd0", fontSize: 13 }}>Python Developer • ATS 91/100</p></div>
-            <span className="badge b-green">Excellent</span>
-          </div>
-          {[["Python Developer", "TechNova Solutions", 92], ["Full Stack (React + Django)", "CloudNine Labs", 84], ["Backend Engineer", "Quantum Leap IT", 71]].map(([t, c, s]) => (
-            <div className="hero-job" key={t}>
-              <CompanyLogo name={c} />
-              <div style={{ flex: 1 }}><b style={{ fontSize: 14 }}>{t}</b><p style={{ color: "#a9abd0", fontSize: 12.5 }}>{c} • Pune</p></div>
-              <span className="badge" style={{ background: "rgba(18,183,106,.18)", color: "#6ce9a6" }}>{s}%</span>
-            </div>
-          ))}
-        </div>
+        <ResumeSheet />
       </section>
 
-      <section className="features">
-        <h2>Everything you need to get hired</h2>
-        <p className="muted" style={{ textAlign: "center", marginTop: 8 }}>Built with Python • Django • React • PostgreSQL • Redis • Celery • Machine Learning</p>
-        <div className="grid g-4" style={{ marginTop: 36 }}>
-          {FEATURES.map(([Icon, t, d, c, bg]) => (
-            <div className="card feature" key={t}>
-              <div className="stat-icon" style={{ background: bg, color: c }}><Icon /></div>
-              <h4>{t}</h4><p>{d}</p>
+      <section className="land-section">
+        <h2>From CV to interview in four steps</h2>
+        <ol className="steps">
+          {STEPS.map(([t, d], i) => (
+            <li key={t}><span className="step-n">{i + 1}</span><h3>{t}</h3><p>{d}</p></li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="land-alt"><div className="land-section">
+        <h2>Everything you need for your job search</h2>
+        <div className="groups">
+          {GROUPS.map(([title, items]) => (
+            <div key={title} className="group">
+              <h3>{title}</h3>
+              {items.map(([Icon, t, d]) => (
+                <div className="g-item" key={t}>
+                  <Icon />
+                  <div><b>{t}</b><p>{d}</p></div>
+                </div>
+              ))}
             </div>
           ))}
         </div>
+      </div></section>
+
+      <section className="land-cta">
+        <h2>Your next interview starts with a better resume.</h2>
+        <Link className="btn btn-hl btn-lg" to="/register"><BriefcaseBusiness />Get my ATS score</Link>
       </section>
+
+      <footer className="land-foot">
+        <span>Built by <b>Ganesh Sawant</b> as an MCA project</span>
+        <span>Python, Django, React, PostgreSQL and machine learning</span>
+      </footer>
     </div>
   );
 }

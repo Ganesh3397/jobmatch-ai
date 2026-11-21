@@ -1,3 +1,4 @@
+import ThemeToggle from "../components/ThemeToggle";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
@@ -24,12 +25,13 @@ export default function Register() {
 
   return (
     <div className="auth">
+      <ThemeToggle />
       <AuthArt />
       <div className="auth-form">
         <form className="auth-box" onSubmit={submit}>
           <MobileLogo />
           <h1>Create your account</h1>
-          <p className="muted" style={{ margin: "6px 0 20px" }}>Free • Upload your resume and get your ATS score in seconds</p>
+          <p className="muted" style={{ margin: "6px 0 20px" }}>It's free. Upload your resume next and get your ATS score in seconds.</p>
           <div className="grid g-2" style={{ gap: 12 }}>
             <div className="field"><label>First name</label><input className="input" value={f.first_name} onChange={set("first_name")} required /></div>
             <div className="field"><label>Last name</label><input className="input" value={f.last_name} onChange={set("last_name")} /></div>
@@ -38,7 +40,7 @@ export default function Register() {
           <div className="field"><label>Email</label><input className="input" type="email" value={f.email} onChange={set("email")} required /></div>
           <div className="field"><label>City</label><input className="input" placeholder="e.g. Pune" value={f.location} onChange={set("location")} /></div>
           <div className="field"><label>Password</label><input className="input" type="password" minLength={6} value={f.password} onChange={set("password")} required /></div>
-          <button className="btn btn-primary btn-block" disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
+          <button className="btn btn-primary btn-block btn-lg" disabled={busy}>{busy ? "Creating…" : "Create account"}</button>
           <p className="muted" style={{ marginTop: 16, textAlign: "center" }}>Already have an account? <Link to="/login">Login</Link></p>
         </form>
       </div>

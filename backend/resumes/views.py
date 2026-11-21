@@ -13,7 +13,10 @@ from rest_framework.views import APIView
 from accounts.permissions import IsSeeker
 
 from .ml.matcher import match_label, match_one, matcher_backend_name
-from .models import JDMatch, Resume
+from .ml.learning import resources_for
+from .ml.roles import ROLES
+from .ml.skill_extractor import category_of
+from .models import JDMatch, Resume, SkillProgress
 from .serializers import (JDMatchRequestSerializer, JDMatchSerializer,
                           ResumeDetailSerializer, ResumeListSerializer,
                           ResumeUploadSerializer)
@@ -66,6 +69,21 @@ class ResumeViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin,
         resume.is_primary = True
         resume.save(update_fields=["is_primary"])
         return Response({"detail": "Primary resume updated."})
+
+    @action(detail=True, url_path="role-ats")
+    def role_ats(self, request, pk=None):
+        """GET /api/resumes/{id}/role-ats/?role=Full Stack Developer -> ATS score for that role"""
+        from .ml.role_ats import GROUPS, ranking, role_ats
+        resume = self.get_object()
+        if resume.status != Resume.Status.DONE:
+            return Response({"detail": "Resume is not analysed yet."}, status=400)
+        top = ranking(resume)
+        role = request.query_params.get("role") or top[0]["role"]
+        if role not in ROLES:
+            return Response({"detail": "Unknown role."}, status=400)
+        data = role_ats(resume, role)
+        data.update({"groups": GROUPS, "ranking": top})
+        return Response(data)
 
     @action(detail=True, methods=["post"])
     def reanalyze(self, request, pk=None):
@@ -129,3 +147,60 @@ class JDMatchHistoryView(ListAPIView):
 
     def get_queryset(self):
         return JDMatch.objects.filter(user=self.request.user).select_related("resume")
+
+
+class RoadmapView(APIView):
+    """
+    GET  /api/resumes/roadmap/?role=Python Developer
+         Week-by-week learning plan for the skills the student is missing for a role.
+    POST /api/resumes/roadmap/  {"skill": "Docker", "done": true}   mark a skill learned / not learned
+    """
+    permission_classes = [IsSeeker]
+
+    def get(self, request):
+        resume = get_primary_resume(request.user)
+        have = {s.lower() for s in (resume.skills if resume else [])}
+        learned = set(SkillProgress.objects.filter(user=request.user).values_list("skill", flat=True))
+        predicted = [r["role"] for r in (resume.predicted_roles if resume else [])]
+        role = request.query_params.get("role") or (predicted[0] if predicted else "Full Stack Developer")
+        if role not in ROLES:
+            return Response({"detail": "Unknown role."}, status=400)
+
+        core, bonus = ROLES[role]
+        steps, week = [], 1
+        for priority, skills in (("core", core), ("bonus", bonus)):
+            for skill in skills:
+                if skill.lower() in have:
+                    continue
+                info = resources_for(skill)
+                steps.append({
+                    "skill": skill, "category": category_of(skill), "priority": priority,
+                    "week_start": week, "week_end": week + info["weeks"] - 1,
+                    "done": skill in learned, **info,
+                })
+                week += info["weeks"]
+
+        already = [s for s in core + bonus if s.lower() in have]
+        total = len(core) + len(bonus)
+        done_now = len(already) + sum(1 for s in steps if s["done"])
+        return Response({
+            "role": role,
+            "roles": list(ROLES.keys()),
+            "suggested_roles": predicted,
+            "has_resume": bool(resume),
+            "already_have": already,
+            "steps": steps,
+            "total_weeks": max(0, week - 1),
+            "remaining_weeks": sum(s["weeks"] for s in steps if not s["done"]),
+            "readiness": round(done_now / total * 100) if total else 0,
+        })
+
+    def post(self, request):
+        skill = (request.data.get("skill") or "").strip()[:80]
+        if not skill:
+            return Response({"detail": "skill is required"}, status=400)
+        if request.data.get("done", True):
+            SkillProgress.objects.get_or_create(user=request.user, skill=skill)
+        else:
+            SkillProgress.objects.filter(user=request.user, skill=skill).delete()
+        return Response({"skill": skill, "done": bool(request.data.get("done", True))})

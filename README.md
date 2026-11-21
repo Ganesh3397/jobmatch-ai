@@ -1,4 +1,5 @@
-# 🎯 JobMatch AI: AI-Powered Resume Analyzer with Real-Time Job Recommendation System
+# 🎯 JobMatch AI: AI-Powered Resume Analyzer with Real-Time Job Recommendations
+### (ATS Score • Role-wise ATS • Live Jobs • AI Mock Interview • AI Resume Writer)
 
 > **MCA Project** | Python • Django REST Framework • React • PostgreSQL • Redis • Celery • Machine Learning (NLP)
 
@@ -13,9 +14,10 @@ Recruiters can post jobs and see applicants **automatically ranked by AI**.
 
 | Module | Features |
 |---|---|
-| 👤 **Authentication** | JWT login (username or email), register as Job Seeker or Recruiter, role-based access, profile, change password |
+| 👤 **Authentication** | JWT login (username or email), public sign-up for job seekers, role-based access, profile, change password |
 | 📄 **Resume Analyzer (AI/NLP)** | PDF/DOCX/TXT parsing, extracts name, email, phone, LinkedIn, GitHub, education, years of experience, sections, 120+ skills in 15 categories |
 | 📊 **ATS Score** | 0-100 score across 7 criteria (contact, links, sections, skills, action verbs, measurable achievements, length) + prioritised tips |
+| 🎯 **Role-wise ATS Score** | The same resume is scored separately for each of 22 roles (Full Stack, Data Analyst, DevOps, Technical Support, IT Helpdesk, Customer Support, Business Analyst...): must-have skills (45), good-to-have skills (15), role keywords (15), title match (10), resume quality (15), with role-specific tips and a "roles you fit best" ranking |
 | 🎯 **Role Prediction** | Predicts top-3 suitable roles (Python Dev, Full Stack, Data Scientist, …) with the core skills still missing |
 | 🔴 **Live Job Recommendations** | Real-time jobs from 5 sources fetched **in parallel** (Remotive, Jobicy, Arbeitnow, Adzuna, JSearch), cached (6h), stored in PostgreSQL, ranked by AI match %, Apply opens the original job post |
 | 🧠 **AI Match Engine** | `60% skill overlap + 30% semantic similarity (TF-IDF or BERT embeddings) + 10% experience fit` |
@@ -23,9 +25,17 @@ Recruiters can post jobs and see applicants **automatically ranked by AI**.
 | 📝 **JD Matcher** | Paste any job description (from LinkedIn/Naukri) → instant match report + history |
 | 📌 **Job Tracker** | Kanban board (Saved → Applied → Interview → Offer → Rejected), drag & drop |
 | 🏢 **Recruiter Panel** | Post/edit/close jobs (skills auto-detected by AI), applicants ranked by AI score, shortlist/interview/hire workflow |
-| 🛡️ **Admin Panel** | Platform analytics (signups, users by role, skill demand vs supply, ATS distribution), manage users, Django admin |
+| 🛡️ **Admin Panel** | Platform analytics (signups, users by role, skill demand vs supply, ATS distribution), manage users, email test, Django admin at `/django-admin/` |
 | ⏰ **Background Jobs** | **Celery + Redis**: resume processing, live-job refresh every 6h, daily email job alerts |
 | 📈 **Dashboards** | Charts for seekers, recruiters and admins (Recharts) |
+| 🗺️ **Skill Roadmap** | Pick a target role → week-by-week plan for missing skills, mini projects, free course links, "mark learned" progress and job-readiness % |
+| 📱 **Installable app (PWA)** | Install on Android / desktop like an app (manifest + service worker, offline page) |
+| 🌙 **Dark mode** | One-click light / dark theme, remembers your choice |
+| 🔐 **Forgot password (email OTP)** | 6-digit code by email (hashed, 10-minute expiry, 5 attempts, 60-second resend limit) via Brevo API or Gmail SMTP; admin can send a test email and set a new password |
+| 👥 **Access control** | Public sign-up creates job seekers only; recruiter accounts are created by the admin |
+| 🤖 **AI Mock Interview** | Role / job based HR + technical + behavioural questions, instant score (0-10), strengths, improvements and key points for every answer, final verdict and history |
+| ✍️ **AI Resume Improver** | Finds weak bullet points and rewrites them with action verbs and measurable impact; suggests a professional summary |
+| 📝 **AI Cover Letter** | One-click, job-specific cover letter (3 tones), editable, copy / download, history |
 
 ---
 
@@ -77,7 +87,7 @@ python manage.py migrate
 python manage.py seed_demo     # demo users + 40 demo jobs + sample resume
 python manage.py runserver
 ```
-Backend runs at **http://localhost:8000** (Django admin at `/admin`).
+Backend runs at **http://localhost:8000** (Django admin at `/django-admin/`).
 
 > 💡 No PostgreSQL installed yet? Set `DB_ENGINE=sqlite` in `.env` to test quickly.
 > 💡 No Redis? Set `USE_REDIS=False` and keep `ASYNC_PROCESSING=False`. Everything still works.
@@ -111,6 +121,44 @@ Sample resumes to upload are in the **`sample_resumes/`** folder.
 
 ## 🌍 Deploy online (free): see **[DEPLOY.md](DEPLOY.md)**
 Render (website + API, one URL) + Neon (PostgreSQL). Step-by-step guide included.
+
+---
+
+## 🤖 Generative AI (optional)
+All AI features work **without any key** using the built-in rule engine. For richer AI answers add a free
+Google Gemini key (https://aistudio.google.com/apikey) as `GEMINI_API_KEY` in `.env` / Render Environment.
+`GEMINI_MODEL` lets you change the model name if Google renames it. If Gemini fails, the app falls back to the rule engine automatically.
+
+## 📧 Email setup (Forgot password)
+Users get a **6-digit code by email**. Choose one provider:
+
+**A) Laptop: Gmail App Password (5 minutes)**
+1. Turn on **2-Step Verification** on your Google account: https://myaccount.google.com/security
+2. Open https://myaccount.google.com/apppasswords → name it `JobMatch` → **Create** → copy the 16-letter password
+3. In `backend/.env` add:
+```
+EMAIL_HOST_USER=yourname@gmail.com
+EMAIL_HOST_PASSWORD=abcd efgh ijkl mnop
+```
+4. Restart `python manage.py runserver`
+
+**B) Live website on Render: Brevo (free, 300 emails/day)**. Render's free plan blocks SMTP, so Gmail SMTP won't work there.
+1. Sign up at https://www.brevo.com
+2. **Senders, Domains & Dedicated IPs → Senders → Add a sender** → your Gmail → open the verification mail
+3. **SMTP & API → API Keys → Generate a new API key** → copy it
+4. Render → your service → **Environment**: `BREVO_API_KEY` = the key, `EMAIL_FROM_ADDRESS` = the verified Gmail
+
+**Check it:** log in as admin → **Users** → "Email for Forgot password" card → **Send test**. If it fails, the card shows the exact reason.
+Without any provider: on the laptop (DEBUG=True) the code is shown on the page and printed in the terminal; on the live site users see a clear "contact admin" message and the admin can reset passwords with 🔑.
+
+---
+
+## 📧 Email (forgot password & job alerts)
+Render's free plan blocks SMTP ports, so emails are sent with the **Brevo** HTTP API (free plan):
+1. Sign up at https://www.brevo.com → **Senders** → add and verify your Gmail as a sender
+2. **SMTP & API → API keys** → create a key
+3. Add to Render Environment: `BREVO_API_KEY`, `EMAIL_FROM_ADDRESS` (your verified Gmail), `EMAIL_FROM_NAME=JobMatch AI`
+Without a key, emails are printed in the server logs and the admin can reset passwords from **Admin → Users → 🔑**.
 
 ---
 
@@ -231,9 +279,11 @@ ai-resume-job-matcher/
 │   │   ├── tasks.py       refresh live jobs, email alerts
 │   │   └── management/commands/seed_demo.py
 │   ├── analytics/         dashboard APIs
+│   ├── ai/                llm.py (Gemini, optional), interview.py, writer.py (improver + cover letter)
 │   └── requirements.txt
 ├── frontend/src/
-│   ├── pages/seeker/      Dashboard, Resume, LiveJobs, JDMatch, Tracker, Applications
+│   ├── pages/seeker/      Dashboard, Resume, LiveJobs, JDMatch, Tracker, Applications,
+│   │                      Roadmap, Interview, AIWriter
 │   ├── pages/recruiter/   Dashboard, Jobs, JobForm, Applicants
 │   ├── pages/admin/       Dashboard, Users
 │   └── components/        Layout, JobCard, JobModal, ui

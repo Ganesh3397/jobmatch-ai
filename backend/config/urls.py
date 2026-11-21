@@ -21,12 +21,13 @@ admin.site.site_header = "JobMatch AI - Admin"
 admin.site.site_title = "JobMatch AI"
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),  # /admin/* belongs to the React admin pages
     path("api/health/", health),
     path("api/auth/", include("accounts.urls")),
     path("api/resumes/", include("resumes.urls")),
     path("api/jobs/", include("jobs.urls")),
     path("api/analytics/", include("analytics.urls")),
+    path("api/ai/", include("ai.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + [
-    re_path(r"^(?!api/|admin/|static/|media/).*$", react_app),
+    re_path(r"^(?!api/|django-admin/|static/|media/).*$", react_app),
 ]

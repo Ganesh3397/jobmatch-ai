@@ -35,7 +35,7 @@ export default function Tracker() {
             const col = items.filter((i) => i.status === key);
             return (
               <div key={key} className="kcol" onDragOver={(e) => e.preventDefault()} onDrop={() => dragId && move(dragId, key)}>
-                <div className="kcol-head"><span>{label}</span><span className="badge" style={{ background: "#fff", color }}>{col.length}</span></div>
+                <div className="kcol-head"><span>{label}</span><span className="badge" style={{ background: "var(--card)", color }}>{col.length}</span></div>
                 {col.map((i) => (
                   <div key={i.id} className="kcard" draggable onDragStart={() => setDragId(i.id)} onDragEnd={() => setDragId(null)} style={{ cursor: "grab" }}>
                     <h5>{i.job.title}</h5>

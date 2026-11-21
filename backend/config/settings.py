@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "resumes",
     "jobs",
     "analytics",
+    "ai",
 ]
 
 MIDDLEWARE = [
@@ -148,6 +149,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=6),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "UPDATE_LAST_LOGIN": True,  # admin can see when each user last logged in
 }
 
 CORS_ALLOWED_ORIGINS = [
@@ -194,13 +196,27 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 # ---------------------------------------------------------------- Email
+# Forgot-password codes and job alerts. The first configured provider is used:
+#   1. Brevo HTTP API  (BREVO_API_KEY)  -> works on Render free plan (SMTP is blocked there)
+#   2. Gmail SMTP      (EMAIL_HOST_USER + EMAIL_HOST_PASSWORD = 16-letter Gmail App Password) -> laptop
+#   3. none            -> emails are printed in the terminal only
 EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = env("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(env("EMAIL_PORT", 587))
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "JobMatch AI <noreply@jobmatch.ai>")
+EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", EMAIL_PORT != 465)
+EMAIL_USE_SSL = EMAIL_PORT == 465
+EMAIL_TIMEOUT = 15
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", "").replace(" ", "")  # Gmail shows app passwords with spaces
+if EMAIL_HOST_USER and EMAIL_HOST_PASSWORD and "console" in EMAIL_BACKEND:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+BREVO_API_KEY = env("BREVO_API_KEY", "").strip()
+EMAIL_FROM_ADDRESS = env("EMAIL_FROM_ADDRESS", "") or EMAIL_HOST_USER or "noreply@jobmatch.ai"
+EMAIL_FROM_NAME = env("EMAIL_FROM_NAME", "JobMatch AI")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", f"{EMAIL_FROM_NAME} <{EMAIL_FROM_ADDRESS}>")
+PASSWORD_RESET_CODE_MINUTES = 10
+# Public website URL used in emails (auto-detected from the request when empty)
+FRONTEND_URL = env("FRONTEND_URL", "")
 
 # ---------------------------------------------------------------- Job APIs
 ADZUNA_APP_ID = env("ADZUNA_APP_ID", "")
@@ -209,6 +225,11 @@ ADZUNA_COUNTRY = env("ADZUNA_COUNTRY", "in")
 JSEARCH_API_KEY = env("JSEARCH_API_KEY", "")  # RapidAPI key (optional)
 # Free job APIs that need NO key: Remotive, Jobicy, Arbeitnow (remote / worldwide jobs)
 FREE_JOB_APIS = env_bool("FREE_JOB_APIS", True)
+
+# ---------------------------------------------------------------- Generative AI (optional)
+# Free key: https://aistudio.google.com/apikey . Without a key the built-in rule engine is used.
+GEMINI_API_KEY = env("GEMINI_API_KEY", "")
+GEMINI_MODEL = env("GEMINI_MODEL", "gemini-3.8-flash")
 
 # ---------------------------------------------------------------- AI / ML
 # "auto" = use sentence-transformers if installed, else TF-IDF

@@ -6,12 +6,17 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import SeekerDashboard from "./pages/seeker/Dashboard";
 import ResumePage from "./pages/seeker/Resume";
 import LiveJobs from "./pages/seeker/LiveJobs";
 import JDMatch from "./pages/seeker/JDMatch";
 import Tracker from "./pages/seeker/Tracker";
 import Applications from "./pages/seeker/Applications";
+import Roadmap from "./pages/seeker/Roadmap";
+import Interview from "./pages/seeker/Interview";
+import AIWriter from "./pages/seeker/AIWriter";
 import RecruiterDashboard from "./pages/recruiter/Dashboard";
 import RecruiterJobs from "./pages/recruiter/Jobs";
 import JobForm from "./pages/recruiter/JobForm";
@@ -36,6 +41,8 @@ export default function App() {
       <Route path="/" element={user ? <Navigate to={homeFor(user.role)} /> : <Landing />} />
       <Route path="/login" element={user ? <Navigate to={homeFor(user.role)} /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to={homeFor(user.role)} /> : <Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route element={<Guard><Layout /></Guard>}>
         <Route path="/profile" element={<Profile />} />
@@ -46,6 +53,9 @@ export default function App() {
         <Route path="/jd-match" element={<Guard roles={["seeker"]}><JDMatch /></Guard>} />
         <Route path="/tracker" element={<Guard roles={["seeker"]}><Tracker /></Guard>} />
         <Route path="/applications" element={<Guard roles={["seeker"]}><Applications /></Guard>} />
+        <Route path="/roadmap" element={<Guard roles={["seeker"]}><Roadmap /></Guard>} />
+        <Route path="/interview" element={<Guard roles={["seeker"]}><Interview /></Guard>} />
+        <Route path="/ai-writer" element={<Guard roles={["seeker"]}><AIWriter /></Guard>} />
 
         <Route path="/recruiter" element={<Guard roles={["recruiter", "admin"]}><RecruiterDashboard /></Guard>} />
         <Route path="/recruiter/jobs" element={<Guard roles={["recruiter", "admin"]}><RecruiterJobs /></Guard>} />

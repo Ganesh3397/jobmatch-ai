@@ -43,8 +43,10 @@ export function errMsg(e, fallback = "Something went wrong") {
   const first = Object.entries(d)[0];
   if (first) {
     const [k, v] = first;
-    const msg = Array.isArray(v) ? v[0] : v;
-    return k === "non_field_errors" ? msg : `${k}: ${msg}`;
+    const msg = String(Array.isArray(v) ? v[0] : v);
+    if (k === "non_field_errors" || !/^(This field|This password|Ensure|Enter a valid|A user with|user with)/i.test(msg)) return msg;
+    const label = k.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+    return `${label}: ${msg}`;
   }
   return fallback;
 }
