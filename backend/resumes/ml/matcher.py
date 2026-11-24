@@ -52,7 +52,8 @@ def _semantic_scores(resume_text: str, job_texts: list) -> list:
 
     vec = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), max_features=20000, sublinear_tf=True)
     try:
-        m = vec.fit_transform([resume_text] + job_texts)
+        # the first ~4000 characters hold the title, skills and requirements; the rest only adds work
+        m = vec.fit_transform([resume_text[:6000]] + [t[:4000] for t in job_texts])
     except ValueError:  # empty vocabulary
         return [0.0] * len(job_texts)
     sims = cosine_similarity(m[0:1], m[1:]).flatten().tolist()
@@ -68,7 +69,11 @@ def match_jobs(resume_text: str, resume_skills: list, resume_exp: float, jobs: l
     semantic = _semantic_scores(resume_text, [j["text"] for j in jobs])
     results = []
     for job, sem in zip(jobs, semantic):
-        job_skills = list(dict.fromkeys((job.get("skills") or []) + extract_skills(job["text"])["skills"]))
+        if job.get("skills_ready") and job.get("skills"):
+            # skills were already extracted when the job was saved -> no need to scan the long text again
+            job_skills = list(job["skills"])
+        else:
+            job_skills = list(dict.fromkeys((job.get("skills") or []) + extract_skills(job["text"])["skills"]))
         job_tech = technical_only(job_skills) or job_skills
         matched = [s for s in job_tech if s.lower() in resume_set]
         missing = [s for s in job_tech if s.lower() not in resume_set]

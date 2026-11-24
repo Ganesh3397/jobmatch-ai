@@ -44,7 +44,7 @@ class JobLiteSerializer(serializers.ModelSerializer):
         model = Job
         fields = ["id", "source", "source_label", "title", "company", "location", "skills",
                   "job_type", "job_type_label", "work_mode", "work_mode_label", "min_experience",
-                  "salary_min", "salary_max", "apply_url", "posted_at", "created_at", "short_description"]
+                  "salary_min", "salary_max", "apply_url", "publisher", "posted_at", "created_at", "short_description"]
 
     def get_short_description(self, obj):
         d = " ".join(obj.description.split())

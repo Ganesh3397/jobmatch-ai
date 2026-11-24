@@ -109,7 +109,7 @@ export default function ResumePage() {
                     <div className="row"><Mail size={15} className="muted" /> {detail.email || <span className="muted">Not found</span>}</div>
                     <div className="row"><Phone size={15} className="muted" /> {detail.phone || <span className="muted">Not found</span>}</div>
                     <div className="row"><Linkedin size={15} className="muted" /> {detail.links?.linkedin || <span className="muted">Not found</span>}</div>
-                    <div className="row"><Github size={15} className="muted" /> {detail.links?.github || <span className="muted">Not found</span>}</div>
+                    {detail.links?.github && <div className="row"><Github size={15} className="muted" /> {detail.links.github}</div>}
                     <div className="row"><GraduationCap size={15} className="muted" /> {detail.education?.join(", ") || <span className="muted">Not found</span>}</div>
                     <div className="row"><Star size={15} className="muted" /> {detail.experience_years} years experience</div>
                   </div>

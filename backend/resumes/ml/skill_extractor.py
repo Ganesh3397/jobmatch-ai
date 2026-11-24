@@ -38,6 +38,16 @@ def _compiled():
     return items
 
 
+@lru_cache(maxsize=1)
+def _needles():
+    """Lower-case literal of every term (same order as _compiled) for a fast 'is it even there?' check."""
+    out = []
+    for skill, (_cat, aliases) in SKILLS.items():
+        for term in {skill, *aliases}:
+            out.append(None if len(term) == 1 else term.lower())
+    return out
+
+
 def _list_like_text(text: str) -> str:
     """Lines that look like skill lists: contain separators like , | • /"""
     lines = []
@@ -62,9 +72,12 @@ def extract_skills(text: str, skills_section: str = "") -> dict:
         # collect every match with its span, longest first, so that
         # "Tailwind CSS" is not also counted as "CSS", "React Native" not as "React"
         found = []
-        for skill, rx, ambiguous in _compiled():
+        hay_low = haystack.lower()
+        for (skill, rx, ambiguous), needle in zip(_compiled(), _needles()):
             if zone_name == "text" and ambiguous:
                 continue  # short aliases are only trusted inside skill lists
+            if needle is not None and needle not in hay_low:
+                continue  # fast substring check: skip the regex when the word is not in the text at all
             count_it = (zone_name == "text") or ambiguous
             for m in rx.finditer(haystack):
                 found.append((m.end() - m.start(), m.start(), m.end(), skill, count_it))

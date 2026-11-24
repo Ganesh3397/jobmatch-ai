@@ -225,6 +225,8 @@ ADZUNA_COUNTRY = env("ADZUNA_COUNTRY", "in")
 JSEARCH_API_KEY = env("JSEARCH_API_KEY", "")  # RapidAPI key (optional)
 # Free job APIs that need NO key: Remotive, Jobicy, Arbeitnow (remote / worldwide jobs)
 FREE_JOB_APIS = env_bool("FREE_JOB_APIS", True)
+# Company careers pages, e.g. CAREER_BOARDS=greenhouse:companyslug,lever:otherslug=Other Company
+CAREER_BOARDS = [x.strip() for x in env("CAREER_BOARDS", "").split(",") if x.strip()]
 
 # ---------------------------------------------------------------- Generative AI (optional)
 # Free key: https://aistudio.google.com/apikey . Without a key the built-in rule engine is used.

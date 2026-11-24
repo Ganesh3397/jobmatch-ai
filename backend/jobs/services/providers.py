@@ -10,6 +10,10 @@ No key needed (enabled by FREE_JOB_APIS=True):
 * Jobicy    - https://jobicy.com/api/v2/remote-jobs    (remote jobs)
 * Arbeitnow - https://www.arbeitnow.com/api/job-board-api (EU + remote jobs)
 
+Company careers pages (no key, enabled by listing companies in CAREER_BOARDS):
+* Greenhouse - boards-api.greenhouse.io (official public job-board API)
+* Lever      - api.lever.co/v0/postings  (official public postings API)
+
 Each provider returns a list of normalised dicts that map 1:1 to the Job model.
 """
 import html
@@ -150,6 +154,7 @@ class JSearchProvider:
                 "location": loc,
                 "description": (j.get("job_description") or "")[:6000],
                 "apply_url": j.get("job_apply_link", ""),
+                "publisher": (j.get("job_publisher") or "")[:80],
                 "salary_min": int(j["job_min_salary"]) if j.get("job_min_salary") else None,
                 "salary_max": int(j["job_max_salary"]) if j.get("job_max_salary") else None,
                 "job_type": {"INTERN": "internship", "PARTTIME": "part_time",
@@ -254,7 +259,122 @@ class ArbeitnowProvider:
         return out[:per_page]
 
 
-PROVIDERS = (AdzunaProvider, JSearchProvider, RemotiveProvider, JobicyProvider, ArbeitnowProvider)
+def _career_boards(kind):
+    """
+    CAREER_BOARDS=greenhouse:razorpay,lever:cred=CRED   ->  [("razorpay", "Razorpay")] for kind="greenhouse"
+    The slug is the last part of the company's careers URL:
+      boards.greenhouse.io/<slug>  or  job-boards.greenhouse.io/<slug>  or  jobs.lever.co/<slug>
+    """
+    out = []
+    for item in getattr(settings, "CAREER_BOARDS", []):
+        k, _, rest = item.partition(":")
+        if k.strip().lower() != kind or not rest.strip():
+            continue
+        slug, _, name = rest.partition("=")
+        slug = slug.strip()
+        out.append((slug, name.strip() or slug.replace("-", " ").title()))
+    return out[:15]
+
+
+def _wanted(query, location, title, text, job_location):
+    """Keep a career-page job only if it fits the search (career pages list every opening of the company)."""
+    words = keyword_for(query).split()
+    hay = f"{title} {text[:2500]}".lower()
+    if words and not all(w in hay for w in words):
+        return False
+    if location:
+        loc = (job_location or "").lower()
+        if location.lower() not in loc and "remote" not in loc:
+            return False
+    return True
+
+
+def _many(boards, fetch):
+    from concurrent.futures import ThreadPoolExecutor
+    if not boards:
+        return []
+    out, errors = [], []
+
+    def one(board):
+        try:
+            return fetch(*board)
+        except Exception as e:  # one company's page failing must not hide the others
+            errors.append(f"{board[0]}: {e.__class__.__name__}")
+            return []
+    with ThreadPoolExecutor(max_workers=min(6, len(boards))) as pool:
+        for jobs in pool.map(one, boards):
+            out.extend(jobs)
+    if errors and not out:
+        raise RuntimeError("career pages failed - " + ", ".join(errors[:3]))
+    return out
+
+
+class GreenhouseProvider:
+    """Official public job-board API used by many companies for their careers page (no key needed)."""
+    name = "greenhouse"
+    URL = "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs"
+
+    @staticmethod
+    def enabled():
+        return bool(_career_boards("greenhouse"))
+
+    def search(self, query, location="", page=1, per_page=30):
+        def fetch(slug, company):
+            r = http_get(self.URL.format(slug=slug), params={"content": "true"})
+            jobs = []
+            for j in r.json().get("jobs", []):
+                desc = _strip_html(html.unescape(j.get("content") or ""))[:8000]
+                loc = (j.get("location") or {}).get("name", "")
+                if not _wanted(query, location, j.get("title", ""), desc, loc):
+                    continue
+                jobs.append({
+                    "source": self.name, "external_id": f"{slug}-{j.get('id')}", "title": j.get("title", ""),
+                    "company": company, "location": loc, "description": desc or j.get("title", ""),
+                    "apply_url": j.get("absolute_url", ""), "publisher": f"{company} careers",
+                    "job_type": _job_type(j.get("title")),
+                    "work_mode": "remote" if "remote" in loc.lower() else "onsite",
+                    "posted_at": _parse_dt(j.get("updated_at")),
+                })
+            return jobs
+        return _many(_career_boards("greenhouse"), fetch)[:per_page]
+
+
+class LeverProvider:
+    """Official public postings API of Lever careers pages (no key needed)."""
+    name = "lever"
+    URL = "https://api.lever.co/v0/postings/{slug}"
+
+    @staticmethod
+    def enabled():
+        return bool(_career_boards("lever"))
+
+    def search(self, query, location="", page=1, per_page=30):
+        def fetch(slug, company):
+            r = http_get(self.URL.format(slug=slug), params={"mode": "json"})
+            jobs = []
+            for j in r.json():
+                cat = j.get("categories") or {}
+                loc = cat.get("location") or ""
+                parts = [j.get("descriptionPlain") or ""] + \
+                        [f"{x.get('text', '')}\n{_strip_html(x.get('content'))}" for x in (j.get("lists") or [])]
+                desc = "\n\n".join(p for p in parts if p).strip()[:8000]
+                if not _wanted(query, location, j.get("text", ""), desc, loc):
+                    continue
+                ts = j.get("createdAt")
+                jobs.append({
+                    "source": self.name, "external_id": f"{slug}-{j.get('id')}", "title": j.get("text", ""),
+                    "company": company, "location": loc, "description": desc or j.get("text", ""),
+                    "apply_url": j.get("hostedUrl") or j.get("applyUrl", ""), "publisher": f"{company} careers",
+                    "job_type": _job_type(cat.get("commitment")),
+                    "work_mode": "remote" if "remote" in (loc + " " + (j.get("workplaceType") or "")).lower() else "onsite",
+                    "posted_at": datetime.fromtimestamp(ts / 1000, tz=timezone.utc) if isinstance(ts, (int, float)) else None,
+                })
+            return jobs
+        return _many(_career_boards("lever"), fetch)[:per_page]
+
+
+PROVIDERS = (AdzunaProvider, JSearchProvider, RemotiveProvider, JobicyProvider, ArbeitnowProvider,
+             GreenhouseProvider, LeverProvider)
 LIVE_SOURCES = [p.name for p in PROVIDERS]
 
 

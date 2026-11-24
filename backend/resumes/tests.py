@@ -369,3 +369,74 @@ class RoleATSTests(TestCase):
         self.assertGreaterEqual(sup["score"], 65)
         self.assertTrue(sup["title_match"])
         self.assertEqual(c.get(f"/api/resumes/{rid}/role-ats/?role=Astronaut").status_code, 400)
+
+
+ACCOUNTANT_CV = """Priya Kulkarni
+priya.k@gmail.com | +91 98220 11223 | linkedin.com/in/priyak
+Professional Summary
+Accountant with 2 years of experience in bookkeeping, GST returns and TDS using Tally Prime.
+Skills
+Tally Prime, GST, TDS, Bank Reconciliation, Advanced Excel, Payroll, Income Tax
+Experience
+Junior Accountant, Shree Traders | Jun 2023 - Present
+• Prepared monthly GST returns for 40+ clients with 100% on-time filing
+• Reconciled bank statements, reducing errors by 30%
+• Processed salary for 25 employees
+Education
+B.Com, Shivaji University | 2019 - 2022
+"""
+
+WEAK_CV = """Amit Shinde
+amit@gmail.com
+I am a fresher. I know Python, HTML, CSS. I want a job in IT company. My hobbies are cricket.
+Education: BCA 2024"""
+
+
+class NonTechAndScoringTests(TestCase):
+    def _score(self, text):
+        p = parse_resume_text(text)
+        sk = extract_skills(p["text"], p["sections"].get("skills", ""))["skills"]
+        return sk, analyze_resume(p, sk)
+
+    def test_accountant_resume_gets_accountant_role(self):
+        sk, a = self._score(ACCOUNTANT_CV)
+        self.assertIn("Tally", sk)
+        self.assertIn("GST", sk)
+        self.assertEqual(predict_roles(sk, text=ACCOUNTANT_CV)[0]["role"], "Accountant")
+        self.assertEqual(a["best_role"], "Accountant")
+
+    def test_scores_are_spread_not_all_100(self):
+        _, good = self._score(ACCOUNTANT_CV)
+        _, weak = self._score(WEAK_CV)
+        self.assertLess(good["score"], 100)
+        self.assertLess(weak["score"], 40)
+        self.assertGreater(good["score"] - weak["score"], 30)
+
+    def test_tech_resume_has_no_non_tech_skills(self):
+        sk = extract_skills("Built REST APIs with Django and PostgreSQL. Developed an inventory management system "
+                            "and a data warehouse dashboard. Managed user accounts and model training.")["skills"]
+        self.assertFalse({"Accounting", "Supply Chain", "Training & Development"} & set(sk))
+
+
+CHEMISTRY_CV = """Sagar Patil
+sagar.patil@gmail.com | +91 97654 32109
+Career Objective
+M.Sc Chemistry graduate seeking a QC Chemist role in a pharmaceutical company.
+Skills
+HPLC, GC, UV-Vis Spectrophotometer, FTIR, Titration, Karl Fischer, Wet Chemistry, GLP, GMP, SOPs, MSDS
+Experience
+Trainee Chemist (QC), Kolhapur Pharma | Jan 2025 - Jun 2025
+• Analysed 300+ samples using HPLC and UV-Vis
+Education
+M.Sc Organic Chemistry, Shivaji University | 2023 - 2025
+"""
+
+
+class ScienceResumeTests(TestCase):
+    def test_chemistry_resume_gets_chemist_roles(self):
+        p = parse_resume_text(CHEMISTRY_CV)
+        sk = extract_skills(p["text"], p["sections"].get("skills", ""))["skills"]
+        self.assertTrue({"HPLC", "Titration", "GMP", "Spectroscopy"} <= set(sk))
+        roles = [r["role"] for r in predict_roles(sk, text=p["text"])]
+        self.assertIn(roles[0], ["QC Chemist / Analytical Chemist", "Lab Chemist"])
+        self.assertIn(analyze_resume(p, sk)["best_role"], ["QC Chemist / Analytical Chemist", "Lab Chemist"])

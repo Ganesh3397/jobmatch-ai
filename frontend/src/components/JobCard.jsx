@@ -2,7 +2,7 @@ import { Bookmark, BookmarkCheck, Briefcase, Clock, ExternalLink, IndianRupee, M
 import { fmtSalary, timeAgo } from "../api";
 import { Chips, CompanyLogo, MatchBadge } from "./ui";
 
-export const LIVE = ["adzuna", "jsearch", "remotive", "jobicy", "arbeitnow"];
+export const LIVE = ["adzuna", "jsearch", "remotive", "jobicy", "arbeitnow", "greenhouse", "lever"];
 
 export default function JobCard({ job, match, onOpen, onSave }) {
   const salary = fmtSalary(job.salary_min, job.salary_max);
@@ -13,7 +13,7 @@ export default function JobCard({ job, match, onOpen, onSave }) {
         <div className="row" style={{ gap: 8 }}>
           <h4>{job.title}</h4>
           {job.source === "internal" && <span className="badge b-green">Easy Apply</span>}
-          {LIVE.includes(job.source) && <span className="badge b-brand">● Live · via {job.source_label}</span>}
+          {LIVE.includes(job.source) && <span className="badge b-brand">● Live · via {job.publisher || job.source_label}</span>}
           {job.source === "demo" && <span className="badge b-gray">Demo</span>}
           {job.applied && <span className="badge b-gray">Applied</span>}
         </div>

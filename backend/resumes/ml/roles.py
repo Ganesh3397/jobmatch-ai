@@ -3,6 +3,7 @@ Predict the most suitable job roles for a candidate from their skills.
 Each role has core skills (weight 2) and bonus skills (weight 1).
 The live-job search uses the top predicted role as its search keyword.
 """
+import re
 
 ROLES = {
     "Python Developer": (["Python", "Django", "SQL"], ["Flask", "FastAPI", "Django REST Framework", "PostgreSQL", "REST API", "Git", "Docker", "Celery", "Redis"]),
@@ -34,21 +35,71 @@ ROLES = {
     "UI/UX Designer": (["UI/UX Design", "Figma"], ["HTML", "CSS", "Communication"]),
     "Database Administrator": (["SQL", "PostgreSQL"], ["MySQL", "Oracle", "Linux", "Redis", "MongoDB", "Bash"]),
     "Network Engineer": (["Computer Networks", "Linux"], ["Cyber Security", "Windows", "Bash", "AWS"]),
+
+    # ---------------- non-IT roles
+    "Accountant": (["Accounting", "Tally", "GST"], ["TDS", "Taxation", "Excel", "Payroll", "Financial Analysis", "Auditing", "SAP"]),
+    "Finance / Audit Executive": (["Financial Analysis", "Auditing", "Excel"], ["Accounting", "Taxation", "SAP", "GST", "Power BI"]),
+    "Banking Executive": (["Banking Operations"], ["Sales", "Customer Service", "Excel", "CRM", "Communication", "Accounting"]),
+    "Sales Executive": (["Sales"], ["Communication", "Business Development", "CRM", "Negotiation", "Telecalling", "Customer Service", "Excel", "Retail"]),
+    "Business Development Executive": (["Business Development", "Sales"], ["Negotiation", "CRM", "Communication", "Marketing", "MS Office"]),
+    "Digital Marketing Executive": (["Digital Marketing", "SEO"], ["Content Writing", "Marketing", "Graphic Design", "Excel", "Communication"]),
+    "Content Writer": (["Content Writing"], ["SEO", "Digital Marketing", "MS Office", "Communication"]),
+    "HR Executive / Recruiter": (["Recruitment", "HR Operations"], ["Payroll", "Communication", "MS Office", "Excel", "Training & Development"]),
+    "Teacher / Trainer": (["Teaching"], ["Communication", "Counselling", "MS Office", "Training & Development", "Leadership"]),
+    "Back Office / Data Entry Executive": (["Back Office"], ["MS Office", "Excel", "Communication", "Time Management", "CRM"]),
+    "Office Administrator": (["Office Administration"], ["MS Office", "Excel", "Communication", "Back Office", "Time Management"]),
+    "Operations / Supply Chain Executive": (["Supply Chain"], ["Excel", "SAP", "Back Office", "Communication", "Negotiation"]),
+    "Telecaller / Customer Care Executive": (["Telecalling"], ["Communication", "Customer Service", "Sales", "CRM", "Email & Chat Support"]),
+    "Retail Store Executive": (["Retail"], ["Sales", "Customer Service", "Communication", "MS Office"]),
+    "Mechanical Engineer": (["Mechanical Engineering", "AutoCAD"], ["SolidWorks", "CATIA", "Quality Control", "Six Sigma", "Excel"]),
+    "Civil Engineer": (["Civil Engineering", "AutoCAD"], ["Excel", "Quality Control", "MS Office", "Leadership"]),
+    "Electrical Engineer": (["Electrical Engineering"], ["AutoCAD", "Quality Control", "MS Office"]),
+    "Quality Control Executive": (["Quality Control"], ["Six Sigma", "Excel", "Mechanical Engineering", "MS Office"]),
+    "Graphic Designer": (["Graphic Design"], ["Video Editing", "UI/UX Design", "Figma", "Digital Marketing", "Content Writing"]),
+    "Nurse / Healthcare Staff": (["Patient Care"], ["Communication", "Lab Technician", "MS Office", "Teamwork"]),
+    "Medical Coder": (["Medical Coding"], ["Patient Care", "Excel", "MS Office"]),
+    "Pharmacist / Medical Representative": (["Pharmacy"], ["Sales", "Communication", "Patient Care"]),
+    "Lab Technician": (["Lab Technician"], ["Patient Care", "MS Office", "Communication"]),
+    "Hotel / Hospitality Executive": (["Hospitality"], ["Customer Service", "Communication", "Sales"]),
+
+    # ---------------- science graduates (Chemistry, Microbiology, Pharma)
+    "QC Chemist / Analytical Chemist": (["Analytical Chemistry", "HPLC"],
+                                        ["Gas Chromatography", "Spectroscopy", "Titration", "Wet Chemistry", "GLP", "GMP",
+                                         "Method Validation", "SOP Documentation", "Lab Safety"]),
+    "R&D Chemist": (["Organic Synthesis"], ["Analytical Chemistry", "HPLC", "Spectroscopy", "Method Validation",
+                                            "Lab Safety", "SOP Documentation"]),
+    "Production Chemist": (["Chemical Process"], ["GMP", "SOP Documentation", "Lab Safety", "Quality Control",
+                                                  "Titration", "Six Sigma"]),
+    "Lab Chemist": (["Wet Chemistry", "Titration"], ["Analytical Chemistry", "Spectroscopy", "Lab Safety", "GLP",
+                                                     "SOP Documentation", "MS Office"]),
+    "Microbiologist": (["Microbiology"], ["PCR", "Cell Culture", "GLP", "GMP", "SOP Documentation", "Lab Safety"]),
+    "QA Executive (Pharma)": (["GMP", "SOP Documentation"], ["Quality Control", "Method Validation", "GLP", "Auditing",
+                                                             "Regulatory Affairs"]),
 }
 
 
-def predict_roles(skills, top_n=3):
+def predict_roles(skills, top_n=3, text=""):
+    """
+    Rank roles by how many of their skills the candidate has.
+    A role needs at least one of its must-have (core) skills to be suggested.
+    If the resume text itself names the role (e.g. "Sales Executive", "Teacher"), it gets a small boost.
+    """
     have = {s.lower() for s in skills}
+    low = (text or "").lower()
     results = []
     for role, (core, bonus) in ROLES.items():
+        if not any(s.lower() in have for s in core):
+            continue
         max_pts = len(core) * 2 + len(bonus)
         pts = sum(2 for s in core if s.lower() in have) + sum(1 for s in bonus if s.lower() in have)
-        if pts == 0:
-            continue
+        fit = pts / max_pts * 100
+        if low and any(len(t.strip()) >= 4 and re.search(r"\b" + re.escape(t.strip()) + r"\b", low)
+                       for t in role.lower().split("/")):
+            fit = min(100, fit + 15)
         missing_core = [s for s in core if s.lower() not in have]
         results.append({
             "role": role,
-            "fit": round(pts / max_pts * 100),
+            "fit": round(fit),
             "missing_core_skills": missing_core,
         })
     results.sort(key=lambda r: r["fit"], reverse=True)

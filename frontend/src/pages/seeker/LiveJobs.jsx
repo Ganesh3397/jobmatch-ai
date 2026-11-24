@@ -1,4 +1,4 @@
-import { Info, MapPin, Radar, RefreshCw, Search, Zap } from "lucide-react";
+import { ExternalLink, Info, MapPin, Radar, RefreshCw, Search, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
@@ -6,6 +6,21 @@ import api, { errMsg } from "../../api";
 import JobCard from "../../components/JobCard";
 import JobModal from "../../components/JobModal";
 import { Empty } from "../../components/ui";
+
+// Search the same role on the big job portals (opens their own search page in a new tab)
+function portalLinks(query, location) {
+  const q = (query || "").trim();
+  const l = (location || "").trim();
+  const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const enc = encodeURIComponent;
+  return [
+    { name: "Naukri", url: `https://www.naukri.com/${slug(q)}-jobs${l ? `-in-${slug(l)}` : ""}?k=${enc(q)}${l ? `&l=${enc(l)}` : ""}` },
+    { name: "LinkedIn", url: `https://www.linkedin.com/jobs/search/?keywords=${enc(q)}&location=${enc(l || "India")}` },
+    { name: "Indeed", url: `https://in.indeed.com/jobs?q=${enc(q)}${l ? `&l=${enc(l)}` : ""}` },
+    { name: "Google Jobs", url: `https://www.google.com/search?q=${enc(`${q} jobs ${l ? `in ${l}` : "in India"}`)}&ibp=htl;jobs` },
+    { name: "Company career pages", url: `https://www.google.com/search?q=${enc(`${q} jobs ${l} careers apply`)}` },
+  ];
+}
 
 export default function LiveJobs() {
   const [q, setQ] = useState("");
@@ -96,6 +111,19 @@ export default function LiveJobs() {
           <div className="row between mt">
             <b>{loading ? "Finding the best jobs for you…" : `${meta?.total_found ?? 0} jobs found for "${meta?.query}"`}</b>
           </div>
+
+          {meta?.query && (
+            <div className="card portal-strip mt">
+              <span className="small"><b>More "{meta.query}" jobs</b> on other job sites:</span>
+              <div className="row" style={{ gap: 8 }}>
+                {portalLinks(meta.query, meta.location || location).map((p) => (
+                  <a key={p.name} className="btn btn-ghost btn-sm" href={p.url} target="_blank" rel="noopener noreferrer">
+                    {p.name} <ExternalLink size={14} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid mt" style={{ gap: 12 }}>
             {loading && [1, 2, 3, 4].map((i) => <div key={i} className="skeleton" style={{ height: 130 }} />)}

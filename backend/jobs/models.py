@@ -10,6 +10,8 @@ class Job(models.Model):
         REMOTIVE = "remotive", "Remotive"
         JOBICY = "jobicy", "Jobicy"
         ARBEITNOW = "arbeitnow", "Arbeitnow"
+        GREENHOUSE = "greenhouse", "Company careers page"
+        LEVER = "lever", "Company careers page"
         DEMO = "demo", "Demo data"
 
     class JobType(models.TextChoices):
@@ -36,6 +38,7 @@ class Job(models.Model):
     salary_min = models.PositiveIntegerField(null=True, blank=True)
     salary_max = models.PositiveIntegerField(null=True, blank=True)
     apply_url = models.URLField(max_length=1000, blank=True)
+    publisher = models.CharField(max_length=80, blank=True)  # original site, e.g. LinkedIn, Naukri.com, Indeed
     posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
                                   on_delete=models.CASCADE, related_name="posted_jobs")
     search_query = models.CharField(max_length=200, blank=True)  # which query fetched it

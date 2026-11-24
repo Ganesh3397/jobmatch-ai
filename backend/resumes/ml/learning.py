@@ -296,7 +296,8 @@ RESOURCES = {
 def resources_for(skill: str) -> dict:
     weeks, why, project, links = RESOURCES.get(
         skill, (2, f"{skill} is asked for in many job descriptions for this role.",
-                f"Build a small project that uses {skill} and add it to your GitHub.", []))
+                f"Practise {skill} on a small real task (a project, internship work or a free course assignment) "
+                f"and mention the result on your resume.", []))
     links = list(links) + [
         ("Free video course (YouTube)", f"https://www.youtube.com/results?search_query={quote_plus(skill + ' full course for beginners')}"),
     ]

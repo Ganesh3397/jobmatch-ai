@@ -91,7 +91,7 @@ export default function JobModal({ job: initial, match, onClose, onApplied }) {
           ) : job.apply_url ? (
             <>
               <a className="btn btn-primary" href={job.apply_url} target="_blank" rel="noreferrer">Apply now — open original job post <ExternalLink /></a>
-              <p className="small muted" style={{ marginTop: 8 }}>Opens the real job posting ({job.source_label}) in a new tab. Complete your application there.</p>
+              <p className="small muted" style={{ marginTop: 8 }}>Opens the real job posting ({job.publisher || job.source_label}) in a new tab. Complete your application there.</p>
             </>
           ) : job.source === "demo" ? (
             <p className="small muted">This is a sample job used for demonstration. Real live jobs show an Apply button.</p>

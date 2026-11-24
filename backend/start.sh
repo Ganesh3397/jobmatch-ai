@@ -3,6 +3,7 @@
 set -e
 python manage.py migrate --noinput
 python manage.py seed_demo --if-empty      # demo data only the FIRST time (never wipes real users)
+python manage.py rescore_resumes || true    # re-score resumes made with the old ATS rules (only once)
 exec gunicorn config.wsgi:application \
      --bind 0.0.0.0:${PORT:-8000} \
      --workers ${WEB_CONCURRENCY:-2} --threads 4 --timeout 120

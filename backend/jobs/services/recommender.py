@@ -34,17 +34,33 @@ def _cache_key(provider, query, location):
 
 
 def _upsert(job_dicts, query):
-    ids = []
+    """Save fetched jobs with a few bulk queries (one query per job was slow on a remote database)."""
+    rows = {}
     for d in job_dicts:
-        if not d.get("external_id") or not d.get("title"):
-            continue
-        d = dict(d)
-        d["skills"] = extract_skills(f"{d['title']}\n{d.get('description', '')}")["skills"][:20]
-        d["search_query"] = query[:200]
-        d["is_active"] = True
-        job, _ = Job.objects.update_or_create(source=d.pop("source"), external_id=d.pop("external_id"), defaults=d)
-        ids.append(job.id)
-    return ids
+        if d.get("external_id") and d.get("title"):
+            rows[(d["source"], str(d["external_id"])[:200])] = d
+    if not rows:
+        return []
+    existing = {(j.source, j.external_id): j for j in Job.objects.filter(
+        source__in={k[0] for k in rows}, external_id__in=[k[1] for k in rows])}
+    now = timezone.now()
+    new, changed = [], []
+    for (src, ext), d in rows.items():
+        job = existing.get((src, ext))
+        if job is None:
+            fields = {k: v for k, v in d.items() if k not in ("source", "external_id")}
+            fields["skills"] = extract_skills(f"{d['title']}\n{d.get('description', '')}")["skills"][:20]
+            new.append(Job(source=src, external_id=ext, search_query=query[:200], is_active=True, **fields))
+        else:  # already known: just mark it fresh (skills were extracted the first time)
+            job.is_active, job.search_query, job.updated_at = True, query[:200], now
+            changed.append(job)
+    if new:
+        Job.objects.bulk_create(new, ignore_conflicts=True)
+    if changed:
+        Job.objects.bulk_update(changed, ["is_active", "search_query", "updated_at"])
+    ids = dict(Job.objects.filter(source__in={k[0] for k in rows}, external_id__in=[k[1] for k in rows])
+               .values_list("external_id", "id"))
+    return [ids[k[1]] for k in rows if k[1] in ids]
 
 
 def _fetch_one(provider, query, location):
@@ -126,43 +142,62 @@ def default_query_for(resume):
     return " ".join(resume.skills[:2]) or "software developer"
 
 
-def recommend_jobs(resume, query="", location="", job_type="", work_mode="", min_score=0,
-                   limit=30, force_refresh=False):
-    explicit = bool(query and query.strip())
-    query = (query or default_query_for(resume)).strip()
+RESULT_TTL = 60 * 15  # ranked results per resume + search are reused for 15 minutes
+
+
+def _rank(resume, query, location, explicit, force_refresh):
     live_ids, meta = fetch_live_jobs(query, location, force=force_refresh)
     ids = list(dict.fromkeys(live_ids + _local_candidates(query, resume.skills, location, explicit)))
-
     qs = Job.objects.filter(id__in=ids, is_active=True)
     # real live jobs found -> hide the sample/demo jobs completely
     if live_ids:
         qs = qs.exclude(source=Job.Source.DEMO)
-    if job_type:
-        qs = qs.filter(job_type=job_type)
-    if work_mode:
-        qs = qs.filter(work_mode=work_mode)
-    jobs = list(qs)
-
+    jobs = list(qs.only("id", "title", "description", "skills", "min_experience", "source"))
     scored = match_jobs(
         resume.raw_text, resume.skills, resume.experience_years,
-        [{"id": j.id, "text": j.text_for_matching, "skills": j.skills, "min_experience": j.min_experience}
+        [{"id": j.id, "text": j.text_for_matching, "skills": j.skills, "min_experience": j.min_experience,
+          "skills_ready": j.source in LIVE_SOURCES}
          for j in jobs],
     )
     by_id = {j.id: j for j in jobs}
     words = _query_words(query)
-    results = []
     for s in scored:
-        if s["score"] < min_score:
-            continue
         s["label"] = match_label(s["score"])
         title = by_id[s["id"]].title.lower()
         # relevance of the job title to what the user searched (0..1)
         s["query_relevance"] = round(sum(w in title for w in words) / len(words), 2) if words else 0
-        results.append({"job": by_id[s["id"]], "match": s})
+    return scored, meta
+
+
+def recommend_jobs(resume, query="", location="", job_type="", work_mode="", min_score=0,
+                   limit=30, force_refresh=False):
+    explicit = bool(query and query.strip())
+    query = (query or default_query_for(resume)).strip()
+    stamp = resume.processed_at.timestamp() if resume.processed_at else 0
+    key = "rec:" + hashlib.md5(f"{resume.id}|{stamp}|{explicit}|{query.lower()}|{location.lower().strip()}"
+                               .encode()).hexdigest()
+    cached = None if force_refresh else cache.get(key)
+    if cached:
+        scored, meta = cached
+        meta = dict(meta, cached=True)
+    else:
+        scored, meta = _rank(resume, query, location, explicit, force_refresh)
+        cache.set(key, (scored, meta), RESULT_TTL)
+
+    # filters only pick from the already ranked list, so changing a filter is instant
+    jobs = Job.objects.filter(id__in=[s["id"] for s in scored], is_active=True)
+    if job_type:
+        jobs = jobs.filter(job_type=job_type)
+    if work_mode:
+        jobs = jobs.filter(work_mode=work_mode)
+    by_id = {j.id: j for j in jobs}
+    results = [{"job": by_id[s["id"]], "match": s} for s in scored
+               if s["id"] in by_id and s["score"] >= min_score]
     boost = 40 if explicit else 10
     results.sort(key=lambda r: (r["match"]["score"] + boost * r["match"]["query_relevance"],
                                 r["job"].posted_at or r["job"].created_at), reverse=True)
 
+    meta = dict(meta)
     meta.update({
         "query": query,
         "location": location,

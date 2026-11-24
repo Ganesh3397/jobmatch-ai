@@ -42,7 +42,7 @@ def process_resume(resume: Resume) -> Resume:
         resume.sections_found = [s for s in parsed["sections"] if s != "header"]
         resume.ats_score = analysis["score"]
         resume.analysis = analysis
-        resume.predicted_roles = predict_roles(sk["skills"])
+        resume.predicted_roles = predict_roles(sk["skills"], text=parsed["text"])
         resume.status = Resume.Status.DONE
         resume.error = ""
         resume.processed_at = timezone.now()
